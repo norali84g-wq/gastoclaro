@@ -28,6 +28,9 @@ Rails.application.routes.draw do
       post "login", to: "sessions#create"
       get "dashboard", to: "dashboard#show"
       post "incomes", to: "incomes#create"
+      get "categories", to: "categories#index"
+      get "expenses", to: "expenses#index"
+      post "expenses", to: "expenses#create"
     end
   end
 end
