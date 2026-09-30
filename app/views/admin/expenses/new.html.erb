@@ -1,0 +1,2 @@
+<h1>Nuevo gasto</h1>
+<%= render "form", expense: @expense, add_more_url: new_admin_expense_path(items: @expense.expense_items.size + 10) %>

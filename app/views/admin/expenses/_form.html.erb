@@ -1,0 +1,80 @@
+<%= form_with model: expense, url: expense.persisted? ? admin_expense_path(expense) : admin_expenses_path, local: true, multipart: true do |f| %>
+
+  <% if expense.errors.any? %>
+    <div style="color: #b23b2e; margin-bottom: 12px; font-size: 13px; background: #fbe9e7; padding: 10px 14px; border-radius: 6px;">
+      <strong>No se pudo guardar:</strong>
+      <ul style="margin: 4px 0 0;">
+        <% expense.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="field">
+    <%= f.label :user_id, "Usuario" %>
+    <%= f.collection_select :user_id, User.all, :id, :user %>
+  </div>
+  <div class="field">
+    <%= f.label :category_id, "Categoría" %>
+    <%= f.collection_select :category_id, Category.all, :id, :name %>
+  </div>
+  <div class="field">
+    <%= f.label :vendor_id, "Comercio (opcional)" %>
+    <%= f.collection_select :vendor_id, Vendor.all, :id, :name, { include_blank: "— ninguno —" } %>
+  </div>
+  <div class="field">
+    <%= f.label :date, "Fecha" %>
+    <%= f.date_field :date, required: true %>
+  </div>
+  <div class="field">
+    <%= f.label :purchase_channel, "Canal de compra" %>
+    <%= f.select :purchase_channel, Expense.purchase_channels.keys.map { |k| [k.capitalize, k] } %>
+  </div>
+  <div class="field">
+    <%= f.label :is_fixed, "¿Es un gasto fijo? (ej: alquiler)" %>
+    <%= f.check_box :is_fixed %>
+  </div>
+  <div class="field">
+    <%= f.label :amount, "Total (se calcula solo si cargás productos)" %>
+    <%= f.number_field :amount, step: "0.01" %>
+  </div>
+
+  <div class="field" id="receipt_field">
+    <%= f.label :receipt_image, "Foto o PDF del ticket/factura/comprobante (opcional)" %>
+    <%= f.file_field :receipt_image, accept: "image/*,application/pdf" %>
+    <% if expense.persisted? && expense.receipt_image.attached? %>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+        Ya tenés un archivo cargado: <%= link_to "Ver actual", url_for(expense.receipt_image), target: "_blank" %> (subir uno nuevo lo reemplaza)
+      </p>
+    <% end %>
+  </div>
+
+  <h3>Productos</h3>
+  <table>
+    <thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Precio unitario</th><th></th></tr></thead>
+    <tbody>
+      <%= f.fields_for :expense_items do |item_form| %>
+        <tr>
+          <td><%= item_form.text_field :name, placeholder: "Ej: Leche" %></td>
+          <td><%= item_form.number_field :quantity, step: "0.01" %></td>
+          <td>
+            <%= item_form.select :unit, [["Unidad", "unidad"], ["Kilogramo", "kg"], ["Gramo", "g"]] %>
+          </td>
+          <td><%= item_form.number_field :unit_price, step: "0.01" %></td>
+          <td>
+            <% if item_form.object.persisted? %>
+              <%= item_form.check_box :_destroy %> <%= item_form.label :_destroy, "Eliminar" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div style="margin: 14px 0;">
+    <%= link_to "+ Agregar más filas de productos", add_more_url, class: "btn secondary" %>
+  </div>
+
+  <%= f.submit "Guardar", class: "btn" %>
+  <%= link_to "Cancelar", admin_expenses_path, class: "btn secondary" %>
+<% end %>

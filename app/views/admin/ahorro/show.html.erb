@@ -1,0 +1,66 @@
+<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+  <div>
+    <h1 style="margin-bottom:6px;">Ahorro</h1>
+    <div style="color:var(--muted); font-size:14px;">
+      Meta de ahorro configurada: <span class="badge"><%= @meta_ahorro_porcentaje %>%</span>
+    </div>
+  </div>
+
+  <div class="card" style="min-width:280px; max-width:360px;">
+    <h3 style="margin-bottom:10px; font-size:15px;">Metas de ahorro</h3>
+
+    <% if @savings_goals.any? %>
+      <% @savings_goals.each do |meta| %>
+        <div style="padding:8px 0; border-bottom:1px solid var(--line);">
+          <div style="display:flex; justify-content:space-between; font-weight:600;">
+            <span><%= meta.name %></span>
+            <span><%= meta.progress %>%</span>
+          </div>
+          <div style="color:var(--muted); font-size:12px; margin-top:2px;">
+            <% if meta.cumplida? %>
+              ¡Meta cumplida!
+            <% else %>
+              Límite <%= meta.deadline&.strftime("%m/%Y") || "sin fecha" %> —
+              $<%= number_with_delimiter(meta.monto_mensual_necesario.round(0)) %> / mes
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <p style="color:var(--muted); font-size:13px;">Todavía no cargaste ninguna meta.</p>
+    <% end %>
+
+    <%= link_to "Gestionar metas", admin_savings_goals_path, class: "btn secondary", style: "margin-top:10px; display:inline-block;" %>
+  </div>
+</div>
+
+<div style="margin-bottom:22px;"></div>
+
+<% @ahorro_por_anio.sort.each do |anio, meses| %>
+  <div class="card">
+    <h3 style="margin-bottom:14px;"><%= anio %></h3>
+    <table>
+      <thead><tr><th>Mes</th><th>Ingreso</th><th>Consumo</th><th>Ahorro</th><th>Acumulado</th></tr></thead>
+      <tbody>
+        <% meses.each do |m| %>
+          <tr>
+            <td><%= m[:mes].strftime("%B").capitalize %></td>
+            <td style="text-align:right;">$<%= number_with_delimiter(m[:ingreso].round(0)) %></td>
+            <td style="text-align:right;">$<%= number_with_delimiter(m[:consumo].round(0)) %></td>
+            <td style="text-align:right; font-weight:600; color: <%= m[:ahorro] >= 0 ? 'var(--accent3)' : 'var(--danger)' %>;">$<%= number_with_delimiter(m[:ahorro].round(0)) %></td>
+            <td style="text-align:right; font-weight:600;">$<%= number_with_delimiter(m[:acumulado].round(0)) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td style="font-weight:700;">Total <%= anio %></td>
+          <td style="text-align:right; font-weight:700;">$<%= number_with_delimiter(meses.sum { |m| m[:ingreso] }.round(0)) %></td>
+          <td style="text-align:right; font-weight:700;">$<%= number_with_delimiter(meses.sum { |m| m[:consumo] }.round(0)) %></td>
+          <td style="text-align:right; font-weight:700;">$<%= number_with_delimiter(meses.sum { |m| m[:ahorro] }.round(0)) %></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+<% end %>

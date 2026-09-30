@@ -1,0 +1,27 @@
+<%= form_with model: category, url: category.persisted? ? admin_category_path(category) : admin_categories_path, local: true do |f| %>
+  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].present? %>
+
+  <div class="field">
+    <%= f.label :name, "Nombre" %>
+    <%= f.text_field :name, required: true %>
+  </div>
+  <div class="field">
+    <%= f.label :parent_id, "Subcategoría de (opcional)" %>
+    <%= f.collection_select :parent_id, Category.where.not(id: category.id), :id, :name, { include_blank: "— ninguna —" } %>
+  </div>
+  <div class="field">
+    <label>
+      <%= f.check_box :tracks_installments %>
+      Esta categoría usa seguimiento de compras en cuotas (tarjetas de crédito)
+    </label>
+  </div>
+
+  <% if category.persisted? %>
+    <%= f.submit "Guardar", class: "btn" %>
+  <% else %>
+    <%= f.submit "Guardar y agregar otra", name: "commit", class: "btn" %>
+    <%= f.submit "Guardar y volver", name: "commit", class: "btn secondary" %>
+  <% end %>
+
+  <%= link_to "Cancelar", (params[:return_to].presence || (category.parent_id.present? ? admin_category_path(category.parent_id) : admin_categories_path)), class: "btn secondary" %>
+<% end %>

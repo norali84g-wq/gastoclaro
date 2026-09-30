@@ -1,0 +1,28 @@
+<%= form_with model: shopping_list_item, url: shopping_list_item.persisted? ? admin_shopping_list_item_path(shopping_list_item) : admin_shopping_list_items_path, local: true do |f| %>
+  <div class="field">
+    <%= f.label :family_group_id, "Familia" %>
+    <%= f.collection_select :family_group_id, FamilyGroup.all, :id, :name, { include_blank: false } %>
+  </div>
+  <div class="field">
+    <%= f.label :category_id, "Categoría" %>
+    <%= f.collection_select :category_id, Category.order(:name), :id, :name, { include_blank: "— elegir —" } %>
+  </div>
+  <div class="field">
+    <%= f.label :name, "Producto" %>
+    <%= f.text_field :name, required: true, placeholder: "Ej: Leche" %>
+  </div>
+  <div class="field">
+    <%= f.label :period, "Período (mes)" %>
+    <%= f.text_field :period, required: true, placeholder: "Ej: 2026-09" %>
+  </div>
+  <div class="field">
+    <%= f.label :quantity, "Cantidad por mes" %>
+    <%= f.number_field :quantity, step: "0.01", min: 0.01 %>
+  </div>
+  <div class="field">
+    <%= f.label :estimated_unit_price, "Precio estimado (por unidad)" %>
+    <%= f.number_field :estimated_unit_price, step: "0.01", min: 0 %>
+  </div>
+  <%= f.submit "Guardar", class: "btn" %>
+  <%= link_to "Cancelar", admin_shopping_list_items_path, class: "btn secondary" %>
+<% end %>

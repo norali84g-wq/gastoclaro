@@ -1,0 +1,42 @@
+<%= form_with model: installment_purchase, url: installment_purchase.persisted? ? admin_installment_purchase_path(installment_purchase) : admin_installment_purchases_path, local: true do |f| %>
+
+  <% if installment_purchase.errors.any? %>
+    <div style="color: #b23b2e; margin-bottom: 12px; font-size: 13px;">
+      <ul>
+        <% installment_purchase.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= f.hidden_field :category_id %>
+
+  <div class="field">
+    <%= f.label :description, "Descripción" %>
+    <%= f.text_field :description, required: true, placeholder: "Ej: Notebook, Zapatillas..." %>
+  </div>
+
+  <div class="field">
+    <%= f.label :vendor_id, "Comercio (opcional)" %>
+    <%= f.collection_select :vendor_id, Vendor.order(:name), :id, :name, { include_blank: "— ninguno —" } %>
+  </div>
+
+  <div class="field">
+    <%= f.label :total_amount, "Monto total" %>
+    <%= f.number_field :total_amount, step: 0.01, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :installments_count, "Cantidad de cuotas" %>
+    <%= f.select :installments_count, (1..48), {}, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :first_period, "Mes de la primera cuota" %>
+    <%= f.text_field :first_period, type: "month", required: true %>
+  </div>
+
+  <%= f.submit "Guardar", class: "btn" %>
+  <%= link_to "Cancelar", admin_category_path(installment_purchase.category_id), class: "btn secondary" %>
+<% end %>

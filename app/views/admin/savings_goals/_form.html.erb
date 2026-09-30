@@ -1,0 +1,36 @@
+<%= form_with model: savings_goal, url: savings_goal.persisted? ? admin_savings_goal_path(savings_goal) : admin_savings_goals_path, local: true do |f| %>
+
+  <% if savings_goal.errors.any? %>
+    <div style="color: #b23b2e; margin-bottom: 12px; font-size: 13px; background: #fbe9e7; padding: 10px 14px; border-radius: 6px;">
+      <strong>No se pudo guardar:</strong>
+      <ul style="margin: 4px 0 0;">
+        <% savings_goal.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name, "Nombre de la meta" %>
+    <%= f.text_field :name, required: true, placeholder: "Ej: Viaje a Bariloche" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :target_amount, "Monto objetivo" %>
+    <%= f.number_field :target_amount, step: 0.01, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :saved_amount, "Ya ahorrado" %>
+    <%= f.number_field :saved_amount, step: 0.01 %>
+  </div>
+
+  <div class="field">
+    <%= f.label :deadline, "Fecha límite" %>
+    <%= f.date_field :deadline %>
+  </div>
+
+  <%= f.submit "Guardar", class: "btn" %>
+  <%= link_to "Cancelar", admin_savings_goals_path, class: "btn secondary" %>
+<% end %>

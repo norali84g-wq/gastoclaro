@@ -1,0 +1,59 @@
+<h1>Resumen</h1>
+<div style="color:var(--muted); margin-top:-14px; margin-bottom:22px; font-size:14px;">
+  <%= current_admin.family_group.name %> · <%= @periodo.capitalize %>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:8px;">
+  <div class="card">
+    <div style="font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);">Ingreso</div>
+    <div style="font-family:'Fraunces',serif; font-size:28px; font-weight:700; color:var(--accent);">$<%= number_with_delimiter(@ingreso.round(0)) %></div>
+  </div>
+  <div class="card">
+    <div style="font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);">Consumo</div>
+    <div style="font-family:'Fraunces',serif; font-size:28px; font-weight:700; color:var(--accent2);">$<%= number_with_delimiter(@consumo.round(0)) %></div>
+  </div>
+  <div class="card">
+    <div style="font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);">Ahorro</div>
+    <div style="font-family:'Fraunces',serif; font-size:28px; font-weight:700; color:var(--accent3);">$<%= number_with_delimiter(@ahorro.round(0)) %></div>
+  </div>
+</div>
+<div style="font-size:13px; color:var(--muted); margin-bottom:24px;">
+  Ingreso ($<%= number_with_delimiter(@ingreso.round(0)) %>) = Consumo ($<%= number_with_delimiter(@consumo.round(0)) %>) + Ahorro ($<%= number_with_delimiter(@ahorro.round(0)) %>)
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:14px;">Ingresos</h3>
+  <table>
+    <thead><tr><th>Concepto</th><th>Fecha</th><th></th></tr></thead>
+    <tbody>
+      <% @incomes_del_mes.each do |income| %>
+        <tr>
+          <td><%= income.description.presence || "—" %></td>
+          <td><%= income.date.strftime("%d/%m/%Y") %></td>
+          <td style="text-align:right; font-weight:600;">$<%= number_with_delimiter(income.amount.round(0)) %></td>
+        </tr>
+      <% end %>
+      <% if @incomes_del_mes.empty? %>
+        <tr><td colspan="3" style="color:var(--muted);">Sin ingresos cargados este mes.</td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:14px;">Consumo por categoría</h3>
+  <table>
+    <thead><tr><th>Categoría</th><th></th></tr></thead>
+    <tbody>
+      <% @consumo_por_categoria.each do |categoria, total| %>
+        <tr>
+          <td><%= categoria %></td>
+          <td style="text-align:right; font-weight:600;">$<%= number_with_delimiter(total.round(0)) %></td>
+        </tr>
+      <% end %>
+      <% if @consumo_por_categoria.empty? %>
+        <tr><td colspan="2" style="color:var(--muted);">Sin gastos cargados este mes.</td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

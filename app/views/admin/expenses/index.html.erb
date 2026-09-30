@@ -1,0 +1,22 @@
+<h1>Gastos</h1>
+<div class="top-actions"><%= link_to "+ Nuevo gasto", new_admin_expense_path, class: "btn" %></div>
+
+<table>
+  <thead><tr><th>Fecha</th><th>Usuario</th><th>Categoría</th><th>Comercio</th><th>Productos</th><th>Total</th><th></th></tr></thead>
+  <tbody>
+    <% @expenses.each do |expense| %>
+      <tr>
+        <td><%= expense.date %></td>
+        <td><%= expense.user.user %></td>
+        <td><%= expense.category.name %></td>
+        <td><%= expense.vendor&.name %></td>
+        <td><%= expense.expense_items.count %></td>
+        <td>$<%= expense.amount %></td>
+        <td>
+          <%= link_to "Editar", edit_admin_expense_path(expense), class: "btn secondary" %>
+          <%= button_to "Eliminar", admin_expense_path(expense), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar gasto?" }, style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

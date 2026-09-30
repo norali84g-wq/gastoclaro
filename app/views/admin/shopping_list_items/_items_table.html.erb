@@ -1,0 +1,22 @@
+<% if items.any? %>
+  <table>
+    <thead><tr><th>Producto</th><th>Período</th><th>Cantidad</th><th>Precio estimado</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+      <% items.each do |item| %>
+        <tr>
+          <td><%= item.name %></td>
+          <td><%= item.period %></td>
+          <td><%= item.quantity %></td>
+          <td>$<%= number_with_precision(item.estimated_unit_price, precision: 2) %></td>
+          <td>$<%= number_with_precision(item.subtotal, precision: 2) %></td>
+          <td>
+            <%= link_to "Editar", edit_admin_shopping_list_item_path(item), class: "btn secondary" %>
+            <%= button_to "Eliminar", admin_shopping_list_item_path(item), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar producto?" }, style: "display:inline" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p style="color: var(--muted); font-size: 13px;">Todavía no cargaste productos acá.</p>
+<% end %>

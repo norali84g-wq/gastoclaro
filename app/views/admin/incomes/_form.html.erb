@@ -1,0 +1,15 @@
+<%= form_with model: [:admin, income], local: true do |f| %>
+  <div class="field">
+    <%= f.label :description, "Concepto" %>
+    <%= f.text_field :description, placeholder: "Ej: Sueldo, Trabajo extra, Reintegros" %>
+  </div>
+  <div class="field">
+    <%= f.label :amount, "Monto" %>
+    <%= f.number_field :amount, step: "0.01" %>
+  </div>
+  <div class="field">
+    <%= f.label :date, "Fecha" %>
+    <%= f.date_field :date %>
+  </div>
+  <%= f.submit "Guardar", class: "btn" %>
+<% end %>

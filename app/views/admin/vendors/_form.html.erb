@@ -1,0 +1,15 @@
+<%= form_with model: vendor, url: vendor.persisted? ? admin_vendor_path(vendor) : admin_vendors_path, local: true do |f| %>
+  <div class="field">
+    <%= f.label :name, "Nombre" %>
+    <%= f.text_field :name, required: true %>
+  </div>
+  <div class="field">
+    <%= f.label :category, "Rubro (ej: supermercado, verdulería, carnicería)" %>
+    <%= f.text_field :category %>
+  </div>
+  <div class="field">
+    <label><%= f.check_box :online_purchase %> Ofrece compra online (delivery/retiro)</label>
+  </div>
+  <%= f.submit "Guardar", class: "btn" %>
+  <%= link_to "Cancelar", admin_vendors_path, class: "btn secondary" %>
+<% end %>

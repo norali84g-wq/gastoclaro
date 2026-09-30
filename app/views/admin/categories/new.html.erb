@@ -1,0 +1,2 @@
+<h1><%= @category.parent_id.present? ? "Nueva subcategoría" : "Nueva categoría" %></h1>
+<%= render "form", category: @category %>

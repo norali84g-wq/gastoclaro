@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GastoClaro — Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+    :root {
+      --bg:#F8F9FA; --ink:#1F2937; --paper:#ffffff; --line:#E2E5E7;
+      --accent:#1B4332; --accent-soft:#DCE8E1;
+      --accent2:#C85A5A; --accent2-soft:#F5E4E1;
+      --accent3:#2D6A4F; --accent3-soft:#DCEEE3;
+      --danger:#991B1B; --danger-soft:#F6DCDC;
+      --muted:#667085;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--ink); margin: 0; line-height: 1.5;
+    }
+    h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 700; line-height: 1.2; color: var(--accent); }
+    h1 { font-size: 26px; margin: 0 0 20px; }
+
+    header {
+      background: var(--accent); color: #fff;
+      padding: 16px 28px; display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    header .brand { display: flex; align-items: center; gap: 10px; font-family:'Fraunces',serif; font-weight:700; font-size: 19px; text-decoration: none; color: #fff; }
+    header .brand span.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent3); display:inline-block; }
+
+    .layout { display: flex; align-items: flex-start; }
+
+    aside.sidebar {
+      width: 220px; flex-shrink: 0; min-height: calc(100vh - 64px);
+      background: var(--accent); padding: 24px 16px; display: flex; flex-direction: column; gap: 4px;
+    }
+    aside.sidebar a {
+      text-decoration: none; color: #EEF3F0; opacity: .75; border-radius: 10px;
+      padding: 10px 14px; font-size: 14px; font-weight: 500; transition: background .15s, opacity .15s;
+    }
+    aside.sidebar a:hover { background: rgba(255,255,255,.10); opacity: 1; }
+    aside.sidebar a.active { background: rgba(255,255,255,.16); opacity: 1; }
+
+    main { flex: 1; padding: 32px 28px 60px; max-width: 1000px; margin: 0 auto; }
+
+    .flash { padding: 11px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border-left: 4px solid transparent; }
+    .notice { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+    .alert { background: var(--accent2-soft); color: var(--accent2); border-color: var(--accent2); }
+
+    .card {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+      padding: 22px 24px; margin-bottom: 20px;
+    }
+
+    table { border-collapse: collapse; width: 100%; background: var(--paper); border-radius: 10px; overflow: hidden; }
+    th, td { border-bottom: 1px solid var(--line); padding: 11px 14px; text-align: left; font-size: 14px; }
+    th { background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .03em; }
+    tbody tr:hover { background: #FAF6EE; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .btn {
+      display: inline-block; background: var(--accent2); color: #fff; padding: 8px 16px;
+      border-radius: 7px; text-decoration: none; font-size: 13.5px; font-weight: 600;
+      border: none; cursor: pointer; font-family: inherit;
+    }
+    .btn:hover { opacity: .9; }
+    .btn.secondary { background: var(--muted); }
+    .btn.danger { background: var(--danger); }
+
+    .top-actions { margin-bottom: 18px; }
+
+    .field { margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13.5px; color: var(--ink); }
+    input[type=text], input[type=password], input[type=number], select, textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px;
+      font-size: 14px; box-sizing: border-box; font-family: inherit; background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px;
+      border-radius: 20px; background: var(--accent3-soft); color: var(--accent3);
+    }
+
+    @media (max-width: 720px) {
+      .layout { flex-direction: column; }
+      aside.sidebar { width: 100%; min-height: auto; flex-direction: row; flex-wrap: wrap; }
+      main { padding: 20px 16px 50px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="<%= admin_root_path %>" class="brand"><span class="dot"></span>GastoClaro — Admin</a>
+    <% if session[:admin_user_id] %>
+      <%= button_to "Salir", admin_logout_path, method: :delete, class: "btn secondary", form: { style: "display:inline" } %>
+    <% end %>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <%= link_to "Resumen", admin_root_path, class: ("active" if controller_name == "dashboard") %>
+      <%= link_to "Ingresos", admin_incomes_path, class: ("active" if controller_name == "incomes") %>
+      <%= link_to "Consumo", admin_categories_path, class: ("active" if controller_name == "categories" || controller_name == "expenses") %>
+      <%= link_to "Ahorro", admin_ahorro_path, class: ("active" if controller_name == "ahorro") %>
+      <%= link_to "Metas de ahorro", admin_savings_goals_path, class: ("active" if controller_name == "savings_goals") %>
+      <%= link_to "Lista de gastos fijos", admin_shopping_list_items_path, class: ("active" if controller_name == "shopping_list_items") %>
+      <%= link_to "Comercios", admin_vendors_path, class: ("active" if controller_name == "vendors") %>
+      <%= link_to "Estadísticas", admin_estadisticas_path, class: ("active" if controller_name == "estadisticas") %>
+      <div style="height:1px; background:rgba(255,255,255,.15); margin:8px 14px;"></div>
+      <%= link_to "Usuarios", admin_users_path, class: ("active" if controller_name == "users") %>
+    </aside>
+    <main>
+      <% if notice %><div class="flash notice"><%= notice %></div><% end %>
+      <% if alert %><div class="flash alert"><%= alert %></div><% end %>
+      <%= yield %>
+    </main>
+  </div>
+</body>
+</html>

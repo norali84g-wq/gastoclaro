@@ -1,0 +1,29 @@
+<h1>Cargar productos — <%= @category.name %></h1>
+
+<%= form_with url: create_batch_admin_shopping_list_items_path, method: :post, local: true do %>
+  <input type="hidden" name="category_id" value="<%= @category.id %>">
+  <div class="field">
+    <label>Período (mes)</label>
+    <input type="text" name="period" value="<%= @period %>" placeholder="Ej: 2026-09">
+  </div>
+
+  <table>
+    <thead><tr><th>Producto</th><th>Cantidad por mes</th><th>Precio estimado (unitario)</th></tr></thead>
+    <tbody>
+      <% @rows_count.times do %>
+        <tr>
+          <td><input type="text" name="items[][name]"></td>
+          <td><input type="number" step="0.01" name="items[][quantity]"></td>
+          <td><input type="number" step="0.01" name="items[][estimated_unit_price]"></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div style="margin: 14px 0;">
+    <%= link_to "+ Agregar más filas", new_batch_admin_shopping_list_items_path(category_id: @category.id, period: @period, items: @rows_count + 10), class: "btn secondary" %>
+  </div>
+
+  <%= submit_tag "Guardar productos", class: "btn" %>
+  <%= link_to "Cancelar", admin_shopping_list_items_path, class: "btn secondary" %>
+<% end %>

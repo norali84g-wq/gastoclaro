@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GastoClaro</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg:#FBFAF7; --ink:#2B2924; --paper:#ffffff; --line:#E4DFD3;
+      --accent:#2F4B3C; --accent-soft:#DCE6E0;
+      --accent2:#7A3B2E; --accent2-soft:#EAE2E6;
+      --accent3:#A9702B; --accent3-soft:#F3E6D3;
+      --muted:#6b6558;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      background: var(--bg); color: var(--ink); margin: 0; line-height: 1.5;
+    }
+    h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 700; color: var(--accent); margin: 0; }
+
+    .top {
+      background: var(--accent); color: #fff; padding: 20px 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    }
+    .top h1 { color: #fff; font-size: 20px; }
+    .top .grupo { font-size: 13px; opacity: .85; }
+
+    main { max-width: 640px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; text-align: center; }
+    .stat .label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+    .stat .value { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 700; }
+    .stat.activo .value { color: var(--accent); }
+    .stat.pasivo .value { color: var(--accent2); }
+    .stat.ahorro .value { color: var(--accent3); }
+    .stat .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .alert-card {
+      background: var(--accent2-soft); border-left: 4px solid var(--accent2);
+      border-radius: 10px; padding: 16px 18px; margin-bottom: 20px;
+    }
+    .alert-card .titulo { font-weight: 700; color: var(--accent2); margin-bottom: 4px; font-size: 14px; }
+    .alert-card .tip { margin-top: 10px; font-size: 13px; color: var(--ink); background: rgba(255,255,255,.5); padding: 8px 10px; border-radius: 6px; }
+
+    .acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .acciones a {
+      display: block; background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px; text-decoration: none; color: var(--ink); font-size: 13.5px; font-weight: 600;
+      text-align: center; transition: background .15s;
+    }
+    .acciones a:hover { background: var(--accent-soft); }
+    .acciones a.primary { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+    .acciones a.primary:hover { opacity: .9; }
+
+    .nota { margin-top: 28px; font-size: 12px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>Hola, <%= @nombre_usuario %></h1>
+    <div class="grupo"><%= @grupo_familiar %></div>
+  </div>
+
+  <main>
+    <div class="stats">
+      <div class="stat activo">
+        <div class="label">Ingreso (activo)</div>
+        <div class="value">$<%= number_with_delimiter(@ingreso_mes) %></div>
+      </div>
+      <div class="stat pasivo">
+        <div class="label">Gasto (pasivo)</div>
+        <div class="value">$<%= number_with_delimiter(@gasto_mes) %></div>
+        <div class="sub"><%= @porcentaje_gastado %>% del ingreso</div>
+      </div>
+      <div class="stat ahorro">
+        <div class="label">Ahorro del mes</div>
+        <div class="value">$<%= number_with_delimiter(@ahorro_mes) %></div>
+      </div>
+    </div>
+
+    <div class="alert-card">
+      <div class="titulo">⚠ Alerta de gasto hormiga: <%= @alerta_gasto_hormiga[:comercio] %> ($<%= number_with_delimiter(@alerta_gasto_hormiga[:monto]) %>)</div>
+      <div class="tip">💡 <%= @tip %></div>
+    </div>
+
+    <div class="acciones">
+      <a href="#" class="primary">+ Cargar gasto</a>
+      <a href="#" class="primary">+ Cargar ingreso</a>
+      <a href="#">Ver ranking gasto hormiga</a>
+      <a href="#">Ver historial de precios</a>
+      <a href="#">Metas de ahorro</a>
+      <a href="#">Exportar resumen (CSV)</a>
+    </div>
+
+    <div class="nota">Datos de ejemplo — todavía no conectados a la base de datos.</div>
+  </main>
+</body>
+</html>

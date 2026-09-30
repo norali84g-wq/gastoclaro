@@ -1,0 +1,26 @@
+<%= form_with model: [:admin, user], local: true do |f| %>
+  <div>
+    <%= f.label :user, "Usuario" %>
+    <%= f.text_field :user %>
+  </div>
+
+  <div>
+    <%= f.label :password, "Contraseña" %>
+    <%= f.password_field :password %>
+    <% if user.persisted? %>
+      <small>Dejalo en blanco para no cambiarla</small>
+    <% end %>
+  </div>
+
+  <div>
+    <%= f.label :family_group_id, "Grupo familiar (ID)" %>
+    <%= f.number_field :family_group_id %>
+  </div>
+
+  <div>
+    <%= f.check_box :admin %>
+    <%= f.label :admin, "Es administrador" %>
+  </div>
+
+  <%= f.submit %>
+<% end %>

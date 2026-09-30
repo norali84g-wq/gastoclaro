@@ -1,0 +1,62 @@
+<h1>Lista de gastos fijos</h1>
+<div class="top-actions" style="margin-bottom: 12px;">
+  <%= link_to "+ Nueva categoría", new_admin_category_path, class: "btn" %>
+</div>
+
+<% @top_categories.each do |top| %>
+  <div class="card" style="margin-bottom: 10px; padding: 10px 16px;">
+    <details>
+      <summary style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0; display:inline; font-size: 16px;"><%= top.name %></h2>
+        <div style="display:flex; gap:6px;">
+          <% if top.subcategories.empty? %>
+            <% if top.tracks_installments? %>
+              <%= link_to "+ Cargar compra en cuotas", new_admin_installment_purchase_path(category_id: top.id), class: "btn" %>
+              <%= link_to "Ver cuotas", admin_installment_purchases_path(category_id: top.id), class: "btn secondary" %>
+            <% else %>
+              <%= link_to "+ Cargar productos", new_batch_admin_shopping_list_items_path(category_id: top.id), class: "btn" %>
+            <% end %>
+          <% end %>
+          <%= link_to "+ Agregar subcategoría", new_admin_category_path(parent_id: top.id), class: "btn secondary" %>
+          <%= link_to "Editar", edit_admin_category_path(top, return_to: request.fullpath), class: "btn secondary" %>
+          <%= button_to "Eliminar", admin_category_path(top), method: :delete, params: { return_to: request.fullpath }, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar la categoría #{top.name}? Esto también borra sus subcategorías y lo que hayas cargado en ellas." }, style: "display:inline" } %>
+        </div>
+      </summary>
+
+      <% if top.subcategories.any? %>
+        <% top.subcategories.order(:name).each do |sub| %>
+          <div style="margin: 8px 0 8px 12px; padding: 6px 0 6px 12px; border-left: 3px solid var(--line);">
+            <details>
+              <summary style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size: 13px; margin: 0; display:inline;"><%= sub.name %></h3>
+                <div style="display:flex; gap:6px;">
+                  <% if sub.tracks_installments? %>
+                    <%= link_to "+ Cargar compra en cuotas", new_admin_installment_purchase_path(category_id: sub.id), class: "btn secondary" %>
+                    <%= link_to "Ver cuotas", admin_installment_purchases_path(category_id: sub.id), class: "btn secondary" %>
+                  <% else %>
+                    <%= link_to "+ Cargar productos", new_batch_admin_shopping_list_items_path(category_id: sub.id), class: "btn secondary" %>
+                  <% end %>
+                  <%= link_to "Editar", edit_admin_category_path(sub, return_to: request.fullpath), class: "btn secondary" %>
+                  <%= button_to "Eliminar", admin_category_path(sub), method: :delete, params: { return_to: request.fullpath }, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar la subcategoría #{sub.name}? Esto también borra lo que hayas cargado ahí." }, style: "display:inline" } %>
+                </div>
+              </summary>
+              <%= render "items_table", items: (@items_by_category[sub] || []) %>
+            </details>
+          </div>
+        <% end %>
+      <% else %>
+        <%= render "items_table", items: (@items_by_category[top] || []) %>
+      <% end %>
+    </details>
+  </div>
+<% end %>
+
+<% sin_categoria = @items_by_category[nil] || [] %>
+<% if sin_categoria.any? %>
+  <div class="card" style="padding: 10px 16px;">
+    <details>
+      <summary style="cursor:pointer;"><h2 style="margin:0; display:inline; font-size: 16px;">Sin categoría</h2></summary>
+      <%= render "items_table", items: sin_categoria %>
+    </details>
+  </div>
+<% end %>

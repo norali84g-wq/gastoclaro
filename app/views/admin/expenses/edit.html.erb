@@ -1,0 +1,2 @@
+<h1>Editar gasto</h1>
+<%= render "form", expense: @expense, add_more_url: edit_admin_expense_path(@expense, items: @expense.expense_items.size + 10) %>

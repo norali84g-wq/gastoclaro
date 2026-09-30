@@ -1,0 +1,234 @@
+<style>
+  .st-page { font-family: Georgia, 'Times New Roman', serif; color: #2b2b2b; }
+  .st-page h1, .st-page h2 { font-family: Georgia, serif; color: #1f3a30; margin: 0 0 12px; }
+
+  .st-filtro-bar {
+    background: #ffffff; border-radius: 10px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04); font-family: Arial, sans-serif;
+  }
+  .st-filtro-bar label { font-size: 13px; color: #6b7a75; display: block; margin-bottom: 4px; }
+  .st-filtro-bar select { padding: 8px 12px; border-radius: 6px; border: 1px solid #e1e6e4; font-size: 14px; background: #fafafa; }
+  .st-filtro-bar button { margin-left: auto; background: #1f3a30; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+
+  .st-section { background: #ffffff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .st-section-title h2 { font-size: 20px; }
+
+  .st-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+  .st-two-col.three { grid-template-columns: 1fr 1fr 1fr; }
+  .st-col-label { font-family: Arial, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7a75; margin-bottom: 10px; }
+
+  .st-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-family: Arial, sans-serif; }
+  .st-bar-label { width: 130px; font-size: 13px; flex-shrink: 0; }
+  .st-bar-label.sub { font-size: 12px; color: #6b7a75; }
+  .st-bar-track { flex: 1; background: #eef1f0; border-radius: 4px; height: 22px; overflow: hidden; }
+  .st-bar-fill { background: #4a7c6f; height: 100%; border-radius: 4px; display: flex; align-items: center; }
+  .st-bar-fill.top1 { background: #1f3a30; }
+  .st-bar-fill.hormiga { background: #b23b2e; }
+  .st-bar-value { font-size: 12px; color: white; margin-left: 8px; white-space: nowrap; }
+
+  .st-page table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; }
+  .st-page thead th { background: #cfe3dd; color: #1f3a30; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; }
+  .st-page tbody td { padding: 10px 12px; border-bottom: 1px solid #e1e6e4; }
+  .st-pct { color: #6b7a75; font-size: 12px; }
+  .st-badge-warn { background: #fbe9e7; color: #b23b2e; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-family: Arial, sans-serif; margin-left: 6px; }
+  .st-rank-badge { display: inline-block; width: 20px; height: 20px; border-radius: 50%; background: #1f3a30; color: white; font-size: 11px; text-align: center; line-height: 20px; margin-right: 8px; font-family: Arial, sans-serif; }
+
+  .st-stat-cards { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+  .st-stat-card { background: #ffffff; border: 1px solid #e1e6e4; border-radius: 10px; padding: 18px 20px; }
+  .st-stat-card .st-label { font-family: Arial, sans-serif; font-size: 13px; color: #6b7a75; margin-bottom: 6px; }
+  .st-stat-card .st-value { font-size: 26px; font-weight: bold; color: #1f3a30; }
+  .st-stat-card .st-value.warn { color: #b23b2e; }
+</style>
+
+<div class="st-page">
+  <h1>Estadísticas</h1>
+
+  <%= form_with url: admin_estadisticas_path, method: :get, local: true, html: { class: "st-filtro-bar" } do %>
+    <div>
+      <label>Año</label>
+      <%= select_tag :anio, options_for_select(@anios_disponibles, @anio), onchange: "this.form.submit()" %>
+    </div>
+    <div>
+      <label>Mes</label>
+      <%= select_tag :mes, options_for_select([["Todos los meses", ""]] + @meses_es.each_with_index.map { |n, i| [n.capitalize, i + 1] }, @mes), onchange: "this.form.submit()" %>
+    </div>
+    <button type="submit">Aplicar filtro</button>
+  <% end %>
+
+  <div class="st-section">
+    <div class="st-section-title"><h2>Ranking de meses — <%= @anio %></h2></div>
+    <div class="st-two-col three">
+      <div>
+        <div class="st-col-label">Más consumo</div>
+        <table><tbody>
+          <% @ranking_consumo.each_with_index do |fila, i| %>
+            <tr>
+              <td><span class="st-rank-badge"><%= i + 1 %></span><%= @meses_es[fila[:mes].month - 1].capitalize %></td>
+              <td style="text-align: right"><%= number_to_currency(fila[:consumo], precision: 0) %></td>
+            </tr>
+          <% end %>
+        </tbody></table>
+      </div>
+      <div>
+        <div class="st-col-label">Más ahorro</div>
+        <table><tbody>
+          <% @ranking_ahorro.each_with_index do |fila, i| %>
+            <tr>
+              <td><span class="st-rank-badge"><%= i + 1 %></span><%= @meses_es[fila[:mes].month - 1].capitalize %></td>
+              <td style="text-align: right"><%= number_to_currency(fila[:ahorro], precision: 0) %></td>
+            </tr>
+          <% end %>
+        </tbody></table>
+      </div>
+      <div>
+        <div class="st-col-label">Más gasto hormiga</div>
+        <table><tbody>
+          <% @ranking_hormiga.each_with_index do |fila, i| %>
+            <tr>
+              <td><span class="st-rank-badge"><%= i + 1 %></span><%= @meses_es[fila[:mes].month - 1].capitalize %></td>
+              <td style="text-align: right"><%= number_to_currency(fila[:hormiga], precision: 0) %></td>
+            </tr>
+          <% end %>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="st-section">
+    <div class="st-section-title"><h2>Consumo mensual — <%= @anio %></h2></div>
+    <% max_mes = @consumo_mensual.map { |f| f[:consumo] }.max.to_f
+       max_mes = 1 if max_mes.zero?
+       total_anio = @consumo_mensual.sum { |f| f[:consumo] }.to_f
+       total_anio = 1 if total_anio.zero? %>
+    <div class="st-two-col">
+      <div>
+        <div class="st-col-label">Gráfico</div>
+        <% @consumo_mensual.each do |fila| %>
+          <div class="st-bar-row">
+            <div class="st-bar-label"><%= @meses_es[fila[:mes].month - 1].capitalize %></div>
+            <div class="st-bar-track">
+              <div class="st-bar-fill<%= " top1" if fila[:consumo] == max_mes %>" style="width: <%= (fila[:consumo] / max_mes * 100).round(1) %>%">
+                <span class="st-bar-value"><%= number_to_currency(fila[:consumo], precision: 0) %></span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <div>
+        <div class="st-col-label">Detalle</div>
+        <table>
+          <thead><tr><th>Mes</th><th>Consumo</th><th>% del año</th></tr></thead>
+          <tbody>
+            <% @consumo_mensual.each do |fila| %>
+              <tr>
+                <td><%= @meses_es[fila[:mes].month - 1].capitalize %></td>
+                <td><%= number_to_currency(fila[:consumo], precision: 0) %></td>
+                <td class="st-pct"><%= (fila[:consumo] / total_anio * 100).round(1) %>%</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="st-section">
+    <div class="st-section-title"><h2>Consumo por categoría y subcategoría — <%= @periodo_label %></h2></div>
+    <% max_cat = @gasto_por_categoria.map { |f| f[:total] }.max.to_f
+       max_cat = 1 if max_cat.zero? %>
+    <div class="st-two-col">
+      <div>
+        <div class="st-col-label">Gráfico</div>
+        <% @gasto_por_categoria.each do |fila| %>
+          <div class="st-bar-row">
+            <div class="st-bar-label"><%= fila[:categoria].name %></div>
+            <div class="st-bar-track">
+              <div class="st-bar-fill top1" style="width: <%= (fila[:total] / max_cat * 100).round(1) %>%">
+                <span class="st-bar-value"><%= number_to_currency(fila[:total], precision: 0) %> (<%= fila[:porcentaje] %>%)</span>
+              </div>
+            </div>
+          </div>
+          <% fila[:subcategorias].each do |sub| %>
+            <div class="st-bar-row" style="padding-left: 20px;">
+              <div class="st-bar-label sub">↳ <%= sub[:categoria].name %></div>
+              <div class="st-bar-track">
+                <div class="st-bar-fill<%= " hormiga" if sub[:sobre_presupuesto] %>" style="width: <%= (sub[:real] / max_cat * 100).round(1) %>%">
+                  <span class="st-bar-value"><%= number_to_currency(sub[:real], precision: 0) %> (<%= sub[:porcentaje] %>%)</span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      <div>
+        <div class="st-col-label">Detalle</div>
+        <table>
+          <thead><tr><th>Categoría</th><th>Monto</th><th>% del período</th></tr></thead>
+          <tbody>
+            <% @gasto_por_categoria.each do |fila| %>
+              <tr>
+                <td><strong><%= fila[:categoria].name %></strong></td>
+                <td><%= number_to_currency(fila[:total], precision: 0) %></td>
+                <td class="st-pct"><%= fila[:porcentaje] %>%</td>
+              </tr>
+              <% fila[:subcategorias].each do |sub| %>
+                <tr>
+                  <td style="padding-left: 24px;">↳ <%= sub[:categoria].name %></td>
+                  <td>
+                    <%= number_to_currency(sub[:real], precision: 0) %>
+                    <% if sub[:sobre_presupuesto] %><span class="st-badge-warn">⚠ se pasó</span><% end %>
+                  </td>
+                  <td class="st-pct"><%= sub[:porcentaje] %>%</td>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="st-section">
+    <div class="st-section-title"><h2>Gastos hormiga — <%= @periodo_label %></h2></div>
+    <div class="st-stat-cards">
+      <div class="st-stat-card">
+        <div class="st-label">Total gasto hormiga del período</div>
+        <div class="st-value warn"><%= number_to_currency(@hormiga_total, precision: 0) %></div>
+      </div>
+    </div>
+    <% max_h = @hormiga_por_comercio.map { |_c, t| t }.max.to_f
+       max_h = 1 if max_h.zero? %>
+    <div class="st-two-col">
+      <div>
+        <div class="st-col-label">Por comercio</div>
+        <% @hormiga_por_comercio.each do |comercio, total| %>
+          <div class="st-bar-row">
+            <div class="st-bar-label"><%= comercio %></div>
+            <div class="st-bar-track">
+              <div class="st-bar-fill hormiga" style="width: <%= (total / max_h * 100).round(1) %>%">
+                <span class="st-bar-value"><%= number_to_currency(total, precision: 0) %></span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <div>
+        <div class="st-col-label">Detalle</div>
+        <table>
+          <thead><tr><th>Producto</th><th>Comercio</th><th>Cant.</th><th>Total</th></tr></thead>
+          <tbody>
+            <% @hormiga_items.each do |item| %>
+              <tr>
+                <td><%= item.name %></td>
+                <td><%= item.expense.vendor&.name || "—" %></td>
+                <td><%= item.quantity %></td>
+                <td><%= number_to_currency(item.subtotal, precision: 0) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

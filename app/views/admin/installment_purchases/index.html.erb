@@ -1,0 +1,46 @@
+<h1>Compras en cuotas — <%= @category.name %></h1>
+
+<div class="top-actions" style="margin-bottom: 12px; display:flex; gap:8px;">
+  <%= link_to "+ Cargar compra en cuotas", new_admin_installment_purchase_path(category_id: @category.id), class: "btn" %>
+  <%= link_to "← Volver", admin_category_path(@category), class: "btn secondary" %>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Descripción</th>
+      <th>Comercio</th>
+      <th>Monto total</th>
+      <th>Cuota mensual</th>
+      <th>Cuotas</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @installment_purchases.each do |compra| %>
+      <tr>
+        <td><%= compra.description %></td>
+        <td><%= compra.vendor&.name || "—" %></td>
+        <td>$<%= number_with_delimiter(compra.total_amount) %></td>
+        <td>$<%= number_with_delimiter(compra.monto_por_cuota) %></td>
+        <td><%= compra.cuotas_pagadas %> / <%= compra.installments_count %></td>
+        <td>
+          <% if compra.finalizada? %>
+            <span style="color: var(--muted);">Finalizada</span>
+          <% else %>
+            <span style="color: #1f3a30; font-weight:bold;">Activa — quedan <%= compra.cuotas_restantes %></span>
+          <% end %>
+        </td>
+        <td>
+          <%= link_to "Editar", edit_admin_installment_purchase_path(compra), class: "btn secondary" %>
+          <%= button_to "Eliminar", admin_installment_purchase_path(compra), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar esta compra en cuotas?" }, style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+
+    <% if @installment_purchases.empty? %>
+      <tr><td colspan="7">Todavía no cargaste compras en cuotas para esta categoría.</td></tr>
+    <% end %>
+  </tbody>
+</table>

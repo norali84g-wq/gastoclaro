@@ -1,0 +1,19 @@
+<h1>Comercios</h1>
+<div class="top-actions"><%= link_to "+ Nuevo comercio", new_admin_vendor_path, class: "btn" %></div>
+
+<table>
+  <thead><tr><th>Nombre</th><th>Rubro</th><th>Compra online</th><th></th></tr></thead>
+  <tbody>
+    <% @vendors.each do |vendor| %>
+      <tr>
+        <td><%= vendor.name %></td>
+        <td><%= vendor.category %></td>
+        <td><%= vendor.online_purchase ? "Sí" : "No" %></td>
+        <td>
+          <%= link_to "Editar", edit_admin_vendor_path(vendor), class: "btn secondary" %>
+          <%= button_to "Eliminar", admin_vendor_path(vendor), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar comercio?" }, style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,0 +1,141 @@
+<h1><%= @category.name %></h1>
+<% if @category.parent %>
+  <p style="color: var(--muted); font-size: 13px;">Subcategoría de <%= link_to @category.parent.name, admin_category_path(@category.parent) %></p>
+<% end %>
+
+<div class="top-actions">
+  <%= link_to "+ Agregar subcategoría", new_admin_category_path(parent_id: @category.id), class: "btn" %>
+  <%= link_to (@category.parent.present? ? "Editar subcategoría" : "Editar esta categoría"), edit_admin_category_path(@category, return_to: request.fullpath), class: "btn secondary" %>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <%= form_with url: admin_category_path(@category), method: :get, local: true do %>
+    <div class="field" style="display:flex; gap:8px; align-items:flex-end;">
+      <div>
+        <label>Período (mes)</label>
+        <input type="text" name="period" value="<%= @period %>" placeholder="Ej: 2026-09">
+      </div>
+      <%= submit_tag "Ver", class: "btn secondary" %>
+    </div>
+  <% end %>
+</div>
+
+<% if @subcategories.any? %>
+  <h3 style="margin-top: 24px;">Subcategorías — estimado vs. real (<%= @period %>)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Subcategoría</th>
+        <th>Estimado</th>
+        <th>Real</th>
+        <th>Diferencia</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @subcategory_rows.each do |row| %>
+        <tr>
+          <td><%= link_to row[:category].name, admin_category_path(row[:category], period: @period) %></td>
+          <td>$<%= number_with_precision(row[:estimado], precision: 2) %></td>
+          <td>$<%= number_with_precision(row[:real], precision: 2) %></td>
+          <td>
+            <% diff = row[:real] - row[:estimado] %>
+            <span style="color: <%= diff > 0 ? '#c0392b' : '#27ae60' %>;">
+              <%= diff > 0 ? "+" : "" %>$<%= number_with_precision(diff, precision: 2) %>
+            </span>
+          </td>
+          <td><%= link_to "Ver detalle", admin_category_path(row[:category], period: @period), class: "btn secondary" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: 24px;">Subcategorías</h3>
+  <table>
+    <thead><tr><th>Nombre</th><th></th></tr></thead>
+    <tbody>
+      <% @subcategories.each do |sub| %>
+        <tr>
+          <td><%= link_to sub.name, admin_category_path(sub) %></td>
+          <td>
+            <%= link_to "Editar", edit_admin_category_path(sub, return_to: request.fullpath), class: "btn secondary" %>
+            <%= button_to "Eliminar", admin_category_path(sub), method: :delete, params: { return_to: request.fullpath }, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar subcategoría?" }, style: "display:inline" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <% if @category.tracks_installments? %>
+    <div class="top-actions" style="margin-top: 20px;">
+      <%= link_to "+ Cargar compra en cuotas", new_admin_installment_purchase_path(category_id: @category.id), class: "btn" %>
+      <%= link_to "Ver compras en cuotas", admin_installment_purchases_path(category_id: @category.id), class: "btn secondary" %>
+    </div>
+  <% else %>
+    <div class="top-actions" style="margin-top: 20px;">
+      <%= link_to "+ Cargar productos planificados", new_batch_admin_shopping_list_items_path(category_id: @category.id, period: @period), class: "btn secondary" %>
+      <%= link_to "+ Cargar gasto real", new_admin_expense_path(category_id: @category.id, period: @period), class: "btn secondary" %>
+      <%= link_to "+ Subir ticket", new_admin_expense_path(category_id: @category.id, period: @period, anchor: "receipt_field"), class: "btn" %>
+    </div>
+
+    <h3 style="margin-top: 24px;">Resumen del período (<%= @period %>)</h3>
+    <div style="display:flex; gap:16px; margin-bottom: 20px;">
+      <div class="card" style="flex:1;">
+        <p style="color: var(--muted); font-size: 13px; margin: 0 0 4px;">Estimado (lo que pensaba gastar)</p>
+        <p style="font-size: 22px; font-weight: bold; margin: 0;">$<%= number_with_precision(@estimado_total, precision: 2) %></p>
+      </div>
+      <div class="card" style="flex:1;">
+        <p style="color: var(--muted); font-size: 13px; margin: 0 0 4px;">Real (lo que gasté)</p>
+        <p style="font-size: 22px; font-weight: bold; margin: 0;">$<%= number_with_precision(@real_total, precision: 2) %></p>
+      </div>
+    </div>
+
+    <h3>Detalle por producto</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cant. planificada</th>
+          <th>Precio est.</th>
+          <th>Total est.</th>
+          <th>Cant. real</th>
+          <th>Precio real</th>
+          <th>Total real</th>
+          <th></th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @comparison_rows.each do |row| %>
+          <tr>
+            <td><%= row[:name] %></td>
+            <td><%= row[:planned_qty] %></td>
+            <td>$<%= number_with_precision(row[:planned_price], precision: 2) %></td>
+            <td>$<%= number_with_precision(row[:planned_total], precision: 2) %></td>
+            <td><%= row[:real_qty] %></td>
+            <td>$<%= number_with_precision(row[:real_price], precision: 2) %></td>
+            <td>$<%= number_with_precision(row[:real_total], precision: 2) %></td>
+            <td>
+              <% if row[:hormiga] %>
+                <span style="color: #c0392b; font-size: 12px;">⚠ gasto hormiga</span>
+              <% elsif row[:no_comprado] %>
+                <span style="color: var(--muted); font-size: 12px;">no comprado</span>
+              <% end %>
+            </td>
+            <td>
+              <% row[:real_items].map(&:expense).uniq.each do |expense| %>
+                <%= link_to "Editar", edit_admin_expense_path(expense), class: "btn secondary" %>
+                <%= button_to "Eliminar", admin_expense_path(expense), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar este gasto? Esto borra todos los productos cargados junto con #{row[:name]}, no solo este." }, style: "display:inline" } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @comparison_rows.empty? %>
+          <tr><td colspan="9" style="color: var(--muted); font-size: 13px;">No hay datos planificados ni reales para este período todavía.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>
+
+<p style="margin-top: 20px;"><%= link_to "← Volver a categorías", admin_categories_path, class: "btn secondary" %></p>

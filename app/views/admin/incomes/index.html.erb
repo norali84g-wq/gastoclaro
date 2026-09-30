@@ -1,0 +1,24 @@
+<h1>Ingresos</h1>
+<div class="top-actions"><%= link_to "+ Nuevo ingreso", new_admin_income_path, class: "btn" %></div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Concepto</th><th>Fecha</th><th>Monto</th><th></th></tr></thead>
+    <tbody>
+      <% @incomes.each do |income| %>
+        <tr>
+          <td><%= income.description.presence || "—" %></td>
+          <td><%= income.date.strftime("%d/%m/%Y") %></td>
+          <td style="text-align:right; font-weight:600;">$<%= number_with_delimiter(income.amount.round(0)) %></td>
+          <td style="text-align:right;">
+            <%= link_to "Editar", edit_admin_income_path(income), class: "btn secondary" %>
+            <%= button_to "Eliminar", admin_income_path(income), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar ingreso?" }, style: "display:inline" } %>
+          </td>
+        </tr>
+      <% end %>
+      <% if @incomes.empty? %>
+        <tr><td colspan="4" style="color:var(--muted);">Todavía no hay ingresos cargados.</td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

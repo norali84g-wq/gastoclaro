@@ -1,0 +1,45 @@
+<h1>Metas de ahorro</h1>
+
+<div class="top-actions" style="margin-bottom: 12px;">
+  <%= link_to "+ Nueva meta", new_admin_savings_goal_path, class: "btn" %>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Meta</th>
+      <th>Objetivo</th>
+      <th>Ahorrado</th>
+      <th>Progreso</th>
+      <th>Fecha límite</th>
+      <th>Ahorro mensual necesario</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @savings_goals.each do |meta| %>
+      <tr>
+        <td><%= meta.name %></td>
+        <td>$<%= number_with_delimiter(meta.target_amount) %></td>
+        <td>$<%= number_with_delimiter(meta.saved_amount) %></td>
+        <td><%= meta.progress %>%</td>
+        <td><%= meta.deadline&.strftime("%d/%m/%Y") || "sin fecha" %></td>
+        <td>
+          <% if meta.cumplida? %>
+            <span style="color: #27ae60; font-weight: bold;">¡Cumplida!</span>
+          <% else %>
+            $<%= number_with_delimiter(meta.monto_mensual_necesario) %> / mes
+          <% end %>
+        </td>
+        <td>
+          <%= link_to "Editar", edit_admin_savings_goal_path(meta), class: "btn secondary" %>
+          <%= button_to "Eliminar", admin_savings_goal_path(meta), method: :delete, class: "btn danger", form: { data: { turbo_confirm: "¿Eliminar esta meta de ahorro?" }, style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+
+    <% if @savings_goals.empty? %>
+      <tr><td colspan="7" style="color: var(--muted); font-size: 13px;">Todavía no cargaste ninguna meta de ahorro.</td></tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,0 +1,16 @@
+<div style="max-width:360px; margin:60px auto 0;">
+  <div class="card">
+    <h1 style="text-align:center; margin-bottom:22px;">Ingresar al back-office</h1>
+    <%= form_with url: admin_login_path, method: :post, local: true do %>
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" name="user" required autofocus>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" name="password" required>
+      </div>
+      <%= submit_tag "Ingresar", class: "btn", style: "width:100%;" %>
+    <% end %>
+  </div>
+</div>
