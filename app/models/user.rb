@@ -6,6 +6,7 @@ class User < ApplicationRecord
   has_many :incomes, dependent: :destroy
 
   validates :user, presence: true, uniqueness: true
+  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
 
   before_create :generate_auth_token
 

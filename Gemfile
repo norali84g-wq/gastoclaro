@@ -57,6 +57,9 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+
+  # Bandeja de entrada web para ver los mails enviados en desarrollo (/letter_opener)
+  gem "letter_opener_web"
 end
 
 group :test do

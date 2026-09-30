@@ -5,6 +5,11 @@
   </div>
 
   <div>
+    <%= f.label :email, "Email" %>
+    <%= f.email_field :email %>
+  </div>
+
+  <div>
     <%= f.label :password, "Contraseña" %>
     <%= f.password_field :password %>
     <% if user.persisted? %>

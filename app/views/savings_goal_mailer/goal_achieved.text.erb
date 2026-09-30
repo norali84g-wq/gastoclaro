@@ -1,0 +1,9 @@
+¡Felicitaciones, <%= @recipient.user %>!
+
+Se cumplió la meta de ahorro "<%= @savings_goal.name %>".
+
+Monto alcanzado: <%= number_to_currency(@savings_goal.saved_amount, unit: "$", delimiter: ".", separator: ",") %>
+Monto objetivo: <%= number_to_currency(@savings_goal.target_amount, unit: "$", delimiter: ".", separator: ",") %>
+
+¡Seguí así!
+GastoClaro

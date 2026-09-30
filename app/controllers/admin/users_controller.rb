@@ -41,11 +41,11 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def user_params
-    params.require(:user).permit(:user, :password, :admin, :family_group_id)
+    params.require(:user).permit(:user, :email, :password, :admin, :family_group_id)
   end
 
   def user_update_params
-    permitted = params.require(:user).permit(:user, :password, :admin, :family_group_id)
+    permitted = params.require(:user).permit(:user, :email, :password, :admin, :family_group_id)
     permitted.delete(:password) if permitted[:password].blank?
     permitted
   end
