@@ -97,4 +97,29 @@ class Api::V1::ExpensesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
   end
+
+  test "create con un vendor_id valido lo asocia al gasto" do
+    vendor = Vendor.create!(name: "Super")
+
+    post "/api/v1/expenses",
+         params: { amount: 10, date: "2026-09-29", category_id: @categoria.id, vendor_id: vendor.id },
+         headers: @headers, as: :json
+
+    assert_response :created
+    assert_equal vendor.id, response.parsed_body["vendor_id"]
+  end
+
+  test "create rechaza un vendor_id que no es un valor simple (intento de inyeccion SQL)" do
+    Vendor.create!(name: "Super")
+
+    [ [ "1=1" ], [ "1=1", "x" ], { "id" => "1" } ].each do |vendor_id_malicioso|
+      assert_no_difference "Expense.count" do
+        post "/api/v1/expenses",
+             params: { amount: 10, date: "2026-09-29", category_id: @categoria.id, vendor_id: vendor_id_malicioso },
+             headers: @headers, as: :json
+      end
+
+      assert_response :unprocessable_entity, "vendor_id #{vendor_id_malicioso.inspect} deberia rechazarse"
+    end
+  end
 end

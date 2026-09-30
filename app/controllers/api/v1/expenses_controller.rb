@@ -10,9 +10,7 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   def create
     expense = current_user.expenses.new(expense_params)
 
-    if params[:vendor_id].present? && !Vendor.exists?(params[:vendor_id])
-      expense.errors.add(:vendor_id, "no existe")
-    end
+    expense.errors.add(:vendor_id, "no existe") unless vendor_valido?
 
     if params[:purchase_channel].present? && !Expense.purchase_channels.key?(params[:purchase_channel])
       expense.errors.add(:purchase_channel, "no es válido")
@@ -26,6 +24,16 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   end
 
   private
+
+  # vendor_id tiene que ser un valor simple (número o texto) y existir. Se busca con
+  # `id:` para que nunca se interprete como SQL: `Vendor.exists?(valor)` trata un
+  # array como condición SQL cruda (inyección).
+  def vendor_valido?
+    vendor_id = params[:vendor_id]
+    return true if vendor_id.blank?
+
+    (vendor_id.is_a?(String) || vendor_id.is_a?(Integer)) && Vendor.exists?(id: vendor_id)
+  end
 
   # purchase_channel se saca de los params permitidos hasta validarlo, porque un valor
   # fuera del enum haría fallar la asignación con un error 500 en vez de un 422.
