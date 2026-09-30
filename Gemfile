@@ -67,4 +67,4 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
-gem "json", "2.9.1"
+gem "json", "3.0.2"
