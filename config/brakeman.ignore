@@ -1,0 +1,52 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "773decd2d2c5cf9270f1ac8b0556838d659d75abbe9533ff33d79297a66311e5",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 44,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:user, :email, :password, :admin, :family_group_id)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Admin::UsersController",
+        "method": "user_params"
+      },
+      "user_input": ":admin",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "Falso positivo intencional: Admin::UsersController solo es accesible para administradores logueados (Admin::BaseController#require_admin), y esa pantalla existe justamente para que un admin cree usuarios, los marque como administradores y los asigne a un grupo familiar."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "d3c2973271762dfc1ad1397fb3aad6fd787df1108b52e0adca0370730ed63c9e",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 48,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:user, :email, :password, :admin, :family_group_id)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Admin::UsersController",
+        "method": "user_update_params"
+      },
+      "user_input": ":admin",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "Falso positivo intencional: Admin::UsersController solo es accesible para administradores logueados (Admin::BaseController#require_admin), y esa pantalla existe justamente para que un admin cree usuarios, los marque como administradores y los asigne a un grupo familiar."
+    }
+  ],
+  "updated": "2026-09-30 03:07:36 UTC",
+  "brakeman_version": "8.0.6"
+}
