@@ -1,5 +1,5 @@
 class Admin::VendorsController < Admin::BaseController
-  before_action :set_vendor, only: [:edit, :update, :destroy]
+  before_action :set_vendor, only: [ :edit, :update, :destroy ]
 
   def index
     @vendors = Vendor.order(:name)

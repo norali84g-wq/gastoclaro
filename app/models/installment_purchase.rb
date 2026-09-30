@@ -27,7 +27,7 @@ class InstallmentPurchase < ApplicationRecord
 
   # Cuántas cuotas quedan pendientes
   def cuotas_restantes(hasta_period = Date.current.strftime("%Y-%m"))
-    [installments_count - cuotas_pagadas(hasta_period), 0].max
+    [ installments_count - cuotas_pagadas(hasta_period), 0 ].max
   end
 
   # ¿Ya se terminó de pagar?

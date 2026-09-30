@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_22_011309) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_30_024120) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -110,7 +110,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_22_011309) do
     t.integer "installments_count"
     t.decimal "total_amount", precision: 10, scale: 2
     t.datetime "updated_at", null: false
-    t.integer "vendor_id", null: false
+    t.integer "vendor_id"
     t.index ["category_id"], name: "index_installment_purchases_on_category_id"
     t.index ["family_group_id"], name: "index_installment_purchases_on_family_group_id"
     t.index ["vendor_id"], name: "index_installment_purchases_on_vendor_id"

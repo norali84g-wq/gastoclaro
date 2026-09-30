@@ -1,5 +1,5 @@
 class Admin::SavingsGoalsController < Admin::BaseController
-  before_action :set_savings_goal, only: [:edit, :update, :destroy]
+  before_action :set_savings_goal, only: [ :edit, :update, :destroy ]
 
   def index
     @savings_goals = current_admin.family_group.savings_goals.order(:deadline)

@@ -1,5 +1,5 @@
 class Admin::ExpensesController < Admin::BaseController
-  before_action :set_expense, only: [:edit, :update, :destroy]
+  before_action :set_expense, only: [ :edit, :update, :destroy ]
 
   MAX_ITEMS = 1000
   DEFAULT_ITEMS = 5
@@ -62,7 +62,7 @@ class Admin::ExpensesController < Admin::BaseController
   def expense_params
     params.require(:expense).permit(
       :user_id, :category_id, :vendor_id, :date, :amount, :is_fixed, :purchase_channel, :receipt_image,
-      expense_items_attributes: [:id, :name, :quantity, :unit_price, :unit, :_destroy]
+      expense_items_attributes: [ :id, :name, :quantity, :unit_price, :unit, :_destroy ]
     )
   end
 end

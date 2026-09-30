@@ -14,7 +14,7 @@ Rails.application.routes.draw do
     resources :vendors
     resources :savings_goals
     resources :users
-    resources :incomes, only: [:index, :new, :create, :edit, :update, :destroy]
+    resources :incomes, only: [ :index, :new, :create, :edit, :update, :destroy ]
     get "ahorro", to: "ahorro#show"
     get "estadisticas", to: "estadisticas#show"
 

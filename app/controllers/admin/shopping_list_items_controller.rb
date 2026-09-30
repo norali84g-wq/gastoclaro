@@ -1,5 +1,5 @@
 class Admin::ShoppingListItemsController < Admin::BaseController
-  before_action :set_shopping_list_item, only: [:edit, :update, :destroy]
+  before_action :set_shopping_list_item, only: [ :edit, :update, :destroy ]
 
   MAX_BATCH_ITEMS = 1000
   DEFAULT_BATCH_ITEMS = 10
@@ -49,7 +49,7 @@ class Admin::ShoppingListItemsController < Admin::BaseController
     category = Category.find(params[:category_id])
     period = params[:period]
     family_group = FamilyGroup.first
-    rows = params.permit(items: [:name, :quantity, :estimated_unit_price])[:items] || []
+    rows = params.permit(items: [ :name, :quantity, :estimated_unit_price ])[:items] || []
 
     created = 0
     ShoppingListItem.transaction do

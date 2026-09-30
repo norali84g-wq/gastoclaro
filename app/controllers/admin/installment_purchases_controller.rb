@@ -1,5 +1,5 @@
 class Admin::InstallmentPurchasesController < Admin::BaseController
-  before_action :set_installment_purchase, only: [:edit, :update, :destroy]
+  before_action :set_installment_purchase, only: [ :edit, :update, :destroy ]
 
   def index
     @category = Category.find(params[:category_id])

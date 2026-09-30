@@ -5,7 +5,7 @@ class Admin::AhorroController < Admin::BaseController
 
     fecha_ingreso = Income.joins(:user).where(users: { family_group_id: family_group.id }).minimum(:date)
     fecha_gasto = Expense.where(family_group_id: family_group.id).minimum(:date)
-    primer_mes = [fecha_ingreso, fecha_gasto].compact.min&.beginning_of_month || hoy.beginning_of_month
+    primer_mes = [ fecha_ingreso, fecha_gasto ].compact.min&.beginning_of_month || hoy.beginning_of_month
 
     meses = []
     mes_actual = primer_mes

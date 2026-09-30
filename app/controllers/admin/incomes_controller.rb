@@ -1,5 +1,5 @@
 class Admin::IncomesController < Admin::BaseController
-  before_action :set_income, only: [:edit, :update, :destroy]
+  before_action :set_income, only: [ :edit, :update, :destroy ]
 
   def index
     @incomes = Income.joins(:user)

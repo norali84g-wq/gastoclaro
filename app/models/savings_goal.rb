@@ -15,12 +15,12 @@ class SavingsGoal < ApplicationRecord
     return 1 if deadline.blank?
 
     meses = (deadline.year * 12 + deadline.month) - (Date.current.year * 12 + Date.current.month)
-    [meses, 1].max
+    [ meses, 1 ].max
   end
 
   # Falta ahorrar (monto objetivo menos lo ya ahorrado, nunca negativo)
   def falta_ahorrar
-    [target_amount - saved_amount, 0].max
+    [ target_amount - saved_amount, 0 ].max
   end
 
   # Cuánto habría que ahorrar por mes, de acá a la fecha límite, para llegar a la meta

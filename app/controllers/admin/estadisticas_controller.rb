@@ -32,7 +32,7 @@ class Admin::EstadisticasController < Admin::BaseController
   def anios_disponibles(family_group)
     fecha_ingreso = Income.joins(:user).where(users: { family_group_id: family_group.id }).minimum(:date)
     fecha_gasto = Expense.where(family_group_id: family_group.id).minimum(:date)
-    primer_anio = [fecha_ingreso, fecha_gasto].compact.min&.year || Date.current.year
+    primer_anio = [ fecha_ingreso, fecha_gasto ].compact.min&.year || Date.current.year
     (primer_anio..Date.current.year).to_a.reverse
   end
 
@@ -67,7 +67,7 @@ class Admin::EstadisticasController < Admin::BaseController
 
       consumo = Expense.where(family_group_id: family_group.id, date: fecha_inicio..fecha_fin).sum(:amount)
       ahorro = ingreso - consumo
-      hormiga_del_mes, = gastos_hormiga(family_group, [mes])
+      hormiga_del_mes, = gastos_hormiga(family_group, [ mes ])
 
       { mes: mes, consumo: consumo, ahorro: ahorro, hormiga: hormiga_del_mes }
     end
@@ -76,7 +76,7 @@ class Admin::EstadisticasController < Admin::BaseController
     ranking_ahorro = filas.sort_by { |f| -f[:ahorro] }
     ranking_hormiga = filas.sort_by { |f| -f[:hormiga] }
 
-    [ranking_consumo, ranking_ahorro, ranking_hormiga, filas]
+    [ ranking_consumo, ranking_ahorro, ranking_hormiga, filas ]
   end
 
   def consumo_por_categoria(family_group, meses_en_rango)
@@ -146,6 +146,6 @@ class Admin::EstadisticasController < Admin::BaseController
                                  .transform_values { |items| items.sum(&:subtotal) }
                                  .sort_by { |_comercio, total| -total }
 
-    [total, por_comercio, items_hormiga]
+    [ total, por_comercio, items_hormiga ]
   end
 end
