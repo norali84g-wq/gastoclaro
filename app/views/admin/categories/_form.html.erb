@@ -1,5 +1,5 @@
 <%= form_with model: category, url: category.persisted? ? admin_category_path(category) : admin_categories_path, local: true do |f| %>
-  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].present? %>
+  <%= hidden_field_tag :return_to, return_to_seguro if return_to_seguro.present? %>
 
   <div class="field">
     <%= f.label :name, "Nombre" %>
@@ -23,5 +23,5 @@
     <%= f.submit "Guardar y volver", name: "commit", class: "btn secondary" %>
   <% end %>
 
-  <%= link_to "Cancelar", (params[:return_to].presence || (category.parent_id.present? ? admin_category_path(category.parent_id) : admin_categories_path)), class: "btn secondary" %>
+  <%= link_to "Cancelar", (return_to_seguro || (category.parent_id.present? ? admin_category_path(category.parent_id) : admin_categories_path)), class: "btn secondary" %>
 <% end %>

@@ -1,5 +1,10 @@
 class Admin::CategoriesController < Admin::BaseController
+  # Ruta interna del sitio: empieza con una sola "/" (no "//" ni "/\", que el navegador
+  # toma como otro dominio) y no tiene caracteres de control.
+  RUTA_INTERNA = %r{\A/(?![/\\])[^\\[:cntrl:]]*\z}
+
   before_action :set_category, only: [ :show, :edit, :update, :destroy ]
+  helper_method :return_to_seguro
 
   def index
     @categories = Category.where(parent_id: nil).includes(:subcategories).order(:name)
@@ -53,7 +58,7 @@ class Admin::CategoriesController < Admin::BaseController
 
   def update
     if @category.update(category_params)
-      redirect_to (params[:return_to].presence || admin_categories_path), notice: "Categoría actualizada"
+      redirect_to (return_to_seguro || admin_categories_path), notice: "Categoría actualizada"
     else
       render :edit, status: :unprocessable_entity
     end
@@ -62,7 +67,7 @@ class Admin::CategoriesController < Admin::BaseController
   def destroy
     parent_id = @category.parent_id
     tipo = parent_id.present? ? "Subcategoría" : "Categoría"
-    destino_si_falla = params[:return_to].presence || (parent_id.present? ? admin_category_path(parent_id) : admin_categories_path)
+    destino_si_falla = return_to_seguro || (parent_id.present? ? admin_category_path(parent_id) : admin_categories_path)
 
     begin
       @category.destroy!
@@ -73,6 +78,13 @@ class Admin::CategoriesController < Admin::BaseController
   end
 
   private
+
+  # return_to viene del navegador, así que solo se acepta si es una ruta interna;
+  # si no (otro dominio, javascript:, un array, etc.) se ignora y se usa el destino por defecto.
+  def return_to_seguro
+    destino = params[:return_to]
+    destino if destino.is_a?(String) && destino.match?(RUTA_INTERNA)
+  end
 
   def set_category
     @category = Category.find(params[:id])
