@@ -1,6 +1,6 @@
 # GastoClaro
 
-GastoClaro es una aplicación web de **gestión de gastos familiares** hecha con Ruby on Rails. Cada grupo familiar registra sus ingresos y gastos (con detalle por ítem, comercio y canal de compra), define metas de ahorro, controla compras en cuotas y arma su lista de compras. Incluye un back-office web para administrar todo y una API JSON (v1) pensada para clientes externos, por ejemplo una app móvil.
+GastoClaro es una aplicación web de gestión de gastos personales hecha con Ruby on Rails, pensada para dejar atrás las planillas de Excel o las anotaciones en papel, donde es fácil olvidarse de registrar algo. Cada usuario registra sus ingresos y gastos (con detalle por ítem, comercio y canal de compra) organizados por categorías, define metas de ahorro, controla sus compras en cuotas y arma una lista de compras con lo que estima gastar, para después compararla con lo que realmente gastó y saber en qué se le fue la plata. Incluye un back-office web para administrar todo y una API JSON (v1) pensada para clientes externos, por ejemplo una app móvil.
 
 **Stack:** Ruby 3.4.10, Rails 8.1, SQLite, Puma, Hotwire (Turbo + Stimulus) e importmap.
 
