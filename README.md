@@ -347,3 +347,5 @@ Estas funcionalidades **quedaron fuera del alcance de esta entrega** y son una *
 
 - **Lectura automática de tickets y facturas (OCR):** sacar una foto del comprobante y que la app cargue sola el comercio, la fecha y los ítems del gasto. El modelo de gastos ya admite adjuntar una imagen de comprobante y guardar ítems con precio unitario, que serían la base para esto.
 - **Comparación de precios entre comercios:** con los precios por ítem y el comercio de cada compra, comparar cuánto cuesta el mismo producto en distintos lugares y ayudar a elegir dónde comprar.
+- **Presupuesto por categoría:** definir un monto objetivo mensual por categoría de gasto (por ejemplo, Alimentos) y mostrar el consumo acumulado contra ese objetivo, con una alerta visual cuando se acerca o supera el límite.
+- **Carga de gastos por chat (WhatsApp o un asistente con IA):** registrar un gasto escribiendo un mensaje en lenguaje natural ("gasté 5000 en el supermercado"), en vez de completar el formulario manualmente.
