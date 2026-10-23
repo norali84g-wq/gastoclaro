@@ -1,6 +1,6 @@
 class Api::V1::ExpensesController < Api::V1::BaseController
   def index
-    expenses = current_user.family_group.expenses
+    expenses = visible_expenses
                            .includes(:category, :expense_items)
                            .order(date: :desc, id: :desc)
 

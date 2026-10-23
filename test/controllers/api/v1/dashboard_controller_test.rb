@@ -45,7 +45,7 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_equal [], body["consumo_por_categoria"]
   end
 
-  test "suma ingresos y gastos del mes de toda la familia y calcula el ahorro" do
+  test "suma solo los ingresos y gastos del mes del usuario y calcula el ahorro" do
     Income.create!(user: @user, amount: 1000, date: Date.new(2026, 9, 1))
     Income.create!(user: @pareja, amount: 500, date: Date.new(2026, 9, 10))
     Expense.create!(user: @user, category: @comida, amount: 300, date: Date.new(2026, 9, 5))
@@ -54,9 +54,9 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     body = dashboard
 
     assert_response :ok
-    assert_equal 1500, decimal(body["ingreso"])
-    assert_equal 400, decimal(body["consumo"])
-    assert_equal 1100, decimal(body["ahorro"])
+    assert_equal 1000, decimal(body["ingreso"])
+    assert_equal 300, decimal(body["consumo"])
+    assert_equal 700, decimal(body["ahorro"])
     assert_equal 20, body["meta_ahorro_porcentaje"]
   end
 
@@ -82,7 +82,7 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
 
     por_categoria = dashboard["consumo_por_categoria"].to_h { |c| [ c["categoria"], decimal(c["total"]) ] }
 
-    assert_equal({ "Comida" => 400, "Transporte" => 50 }, por_categoria)
+    assert_equal({ "Comida" => 300, "Transporte" => 50 }, por_categoria)
   end
 
   test "ahorro_mensual trae los ultimos 6 meses en orden con el acumulado" do
