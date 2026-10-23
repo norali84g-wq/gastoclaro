@@ -28,6 +28,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       post "login", to: "sessions#create"
+      post "register", to: "registrations#create"
       get "dashboard", to: "dashboard#show"
       post "incomes", to: "incomes#create"
       get "categories", to: "categories#index"
