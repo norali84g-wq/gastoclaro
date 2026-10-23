@@ -68,6 +68,15 @@ Sin token, o con un token inválido, la API responde `401` con `{ "error": "No a
 
 El token se genera una sola vez, cuando se crea el usuario, y **no vence ni se renueva**. Cada usuario tiene el suyo.
 
+### Permisos
+
+Hay dos tipos de usuario:
+
+- **Usuario común:** ve solo sus propios ingresos y gastos, tanto en el dashboard como en los listados.
+- **Administrador** (`admin`): ve los datos de todos y puede usar los endpoints reservados para admins.
+
+Si un usuario común intenta usar algo reservado para admins, la API responde `403` con `{ "error": "Acceso denegado" }`.
+
 ### Resumen de endpoints
 
 | Método | Ruta | Requiere token | Descripción |
@@ -77,8 +86,9 @@ El token se genera una sola vez, cuando se crea el usuario, y **no vence ni se r
 | `GET`  | `/api/v1/dashboard` | Sí | Resumen del mes actual y ahorro de los últimos 6 meses |
 | `POST` | `/api/v1/incomes` | Sí | Registra un ingreso |
 | `GET`  | `/api/v1/categories` | Sí | Lista las categorías |
-| `GET`  | `/api/v1/expenses` | Sí | Lista los gastos del grupo familiar |
+| `GET`  | `/api/v1/expenses` | Sí | Lista tus gastos (el admin ve los de todos) |
 | `POST` | `/api/v1/expenses` | Sí | Registra un gasto |
+| `GET`  | `/api/v1/users` | Sí (solo admin) | Lista los usuarios |
 
 Los ejemplos de abajo son respuestas reales, capturadas contra una instancia local con datos de prueba. El token que aparece es el de esa instancia descartable. En los ejemplos con `curl`, `<TOKEN>` es el valor que devolvió el login.
 
@@ -148,7 +158,7 @@ Si hay datos inválidos, `422` con la lista de errores (por ahora los mensajes e
 
 ### `GET /api/v1/dashboard`
 
-Devuelve el resumen del **mes en curso** para el grupo familiar del usuario: ingresos, consumo, ahorro, consumo por categoría y la evolución de los últimos 6 meses con el ahorro acumulado. `meta_ahorro_porcentaje` es el porcentaje de ahorro definido para el grupo.
+Devuelve el resumen del **mes en curso** del usuario (si es admin, el de todos): ingresos, consumo, ahorro, consumo por categoría y la evolución de los últimos 6 meses con el ahorro acumulado. `meta_ahorro_porcentaje` es el porcentaje de ahorro definido para el grupo familiar del usuario.
 
 ```bash
 curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
@@ -223,7 +233,7 @@ Respuesta `200`:
 
 ### `GET /api/v1/expenses`
 
-Lista los gastos de **todo el grupo familiar** del usuario, del más reciente al más antiguo, con su categoría e ítems.
+Lista los gastos del usuario, del más reciente al más antiguo, con su categoría e ítems. Si el usuario es admin, lista los de todos.
 
 ```bash
 curl http://localhost:3000/api/v1/expenses -H "Authorization: Bearer <TOKEN>"
@@ -312,11 +322,34 @@ Con datos inválidos (por ejemplo un `purchase_channel` que no existe), `422`:
 
 Un `vendor_id` inexistente también devuelve `422`.
 
+### `GET /api/v1/users`
+
+Lista los usuarios. **Solo para administradores.** No devuelve contraseñas ni tokens.
+
+```bash
+curl http://localhost:3000/api/v1/users -H "Authorization: Bearer <TOKEN>"
+```
+
+Respuesta `200`:
+
+```json
+[
+  { "id": 1, "user": "admin", "email": null, "admin": true },
+  { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
+]
+```
+
+Sin token, `401`. Con el token de un usuario común, `403`:
+
+```json
+{ "error": "Acceso denegado" }
+```
+
 ### Notas sobre la API
 
 - Los mensajes de validación vienen del modelo y hoy mezclan español e inglés (por ejemplo `"Amount must be greater than 0"`).
 - Cuando el `purchase_channel` o el `vendor_id` son inválidos, la API responde solo ese error y no valida el resto de los campos en la misma respuesta.
-- Las categorías son globales; los gastos y el dashboard se limitan al grupo familiar del usuario.
+- Las categorías son globales; los gastos y el dashboard se limitan al usuario: cada uno ve solo lo suyo y el admin ve todo.
 
 ## Modelo de datos
 
