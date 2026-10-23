@@ -10,7 +10,7 @@ class Api::V1::SessionsControllerTest < ActionDispatch::IntegrationTest
     post "/api/v1/login", params: { user: "tester", password: "password123" }, as: :json
 
     assert_response :ok
-    assert_equal @user.auth_token, response.parsed_body["token"]
+    assert_equal @user, AuthToken.user_from(response.parsed_body["token"])
     assert_equal "tester", response.parsed_body["user"]
   end
 

@@ -5,7 +5,7 @@ class Api::V1::BaseController < ActionController::API
 
   def authenticate_user!
     token = request.headers["Authorization"]&.split(" ")&.last
-    @current_user = User.find_by(auth_token: token) if token.present?
+    @current_user = AuthToken.user_from(token) if token.present?
     render json: { error: "No autorizado" }, status: :unauthorized unless @current_user
   end
 

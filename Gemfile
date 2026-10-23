@@ -68,3 +68,5 @@ group :test do
   gem "selenium-webdriver"
 end
 gem "json", "2.9.1"
+
+gem "jwt", "~> 3.3"
