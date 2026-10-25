@@ -73,6 +73,7 @@ El token se genera una sola vez, cuando se crea el usuario, y **no vence ni se r
 | Método | Ruta | Requiere token | Descripción |
 |--------|------|:--------------:|-------------|
 | `POST` | `/api/v1/login` | No | Devuelve el token del usuario |
+| `POST` | `/api/v1/register` | No | Crea una cuenta nueva y devuelve su token |
 | `GET`  | `/api/v1/dashboard` | Sí | Resumen del mes actual y ahorro de los últimos 6 meses |
 | `POST` | `/api/v1/incomes` | Sí | Registra un ingreso |
 | `GET`  | `/api/v1/categories` | Sí | Lista las categorías |
@@ -106,6 +107,43 @@ Con credenciales incorrectas, `401`:
 
 ```json
 { "error": "Usuario o contraseña incorrectos" }
+```
+
+### `POST /api/v1/register`
+
+Crea una cuenta nueva. No hace falta iniciar sesión ni enviar token, porque todavía no hay cuenta. Quien se registra por acá es un usuario común y ve solo sus propios datos. El rol de administrador no se puede pedir desde la API: si el pedido trae `admin` o `family_group_id`, se ignoran.
+
+Parámetros:
+
+- `user`: obligatorio, no puede repetirse.
+- `email`: obligatorio, con formato válido y único (no distingue mayúsculas de minúsculas).
+- `password`: obligatorio, mínimo 8 caracteres.
+- `password_confirmation`: obligatorio, tiene que ser igual a `password`.
+
+```bash
+curl -X POST http://localhost:3000/api/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"user":"prueba1","email":"prueba1@example.com","password":"clave1234","password_confirmation":"clave1234"}'
+```
+
+Si sale bien, `201`:
+
+```json
+{
+  "token": "65f3a9e8579905085fc415e8317b79af722ade18",
+  "user": "prueba1"
+}
+```
+
+Si hay datos inválidos, `422` con la lista de errores (por ahora los mensajes están en inglés):
+
+```json
+{
+  "errors": [
+    "User has already been taken",
+    "Email has already been taken"
+  ]
+}
 ```
 
 ### `GET /api/v1/dashboard`
