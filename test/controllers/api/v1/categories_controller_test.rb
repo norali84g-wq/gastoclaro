@@ -4,7 +4,7 @@ class Api::V1::CategoriesControllerTest < ActionDispatch::IntegrationTest
   setup do
     familia = FamilyGroup.create!(name: "Familia de prueba")
     @user = User.create!(user: "tester", password: "password123", family_group: familia)
-    @headers = { "Authorization" => "Bearer #{@user.auth_token}" }
+    @headers = { "Authorization" => "Bearer #{AuthToken.encode(@user)}" }
   end
 
   test "sin header de autorizacion da 401" do
@@ -21,14 +21,6 @@ class Api::V1::CategoriesControllerTest < ActionDispatch::IntegrationTest
 
   test "con token invalido da 401" do
     get "/api/v1/categories", headers: { "Authorization" => "Bearer tokenfalso" }
-
-    assert_response :unauthorized
-  end
-
-  test "sin token no entra como un usuario que tiene auth_token nulo" do
-    @user.update_column(:auth_token, nil)
-
-    get "/api/v1/categories"
 
     assert_response :unauthorized
   end

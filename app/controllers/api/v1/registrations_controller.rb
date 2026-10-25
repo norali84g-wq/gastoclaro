@@ -5,7 +5,7 @@ class Api::V1::RegistrationsController < Api::V1::BaseController
     user = RegisterUser.call(registration_params)
 
     if user.persisted?
-      render json: { token: user.auth_token, user: user.user }, status: :created
+      render json: { token: AuthToken.encode(user), user: user.user }, status: :created
     else
       render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
     end

@@ -64,9 +64,9 @@ La API devuelve y recibe JSON. Todas las rutas cuelgan de `/api/v1` y, salvo el 
    Authorization: Bearer <TOKEN>
    ```
 
-Sin token, o con un token inválido, la API responde `401` con `{ "error": "No autorizado" }`.
+Sin token, o con un token inválido o vencido, la API responde `401` con `{ "error": "No autorizado" }`.
 
-El token se genera una sola vez, cuando se crea el usuario, y **no vence ni se renueva**. Cada usuario tiene el suyo.
+El token es un [JWT](https://jwt.io) firmado por el servidor y **vence a las 24 horas**. Cuando vence, la API responde `401` y hay que iniciar sesión de nuevo. Con `DELETE /api/v1/logout` se cierra la sesión y el token deja de servir antes de tiempo.
 
 ### Permisos
 
@@ -82,6 +82,7 @@ Si un usuario común intenta usar algo reservado para admins, la API responde `4
 | Método | Ruta | Requiere token | Descripción |
 |--------|------|:--------------:|-------------|
 | `POST` | `/api/v1/login` | No | Devuelve el token del usuario |
+| `DELETE` | `/api/v1/logout` | Sí | Cierra la sesión e invalida el token |
 | `POST` | `/api/v1/register` | No | Crea una cuenta nueva y devuelve su token |
 | `GET`  | `/api/v1/dashboard` | Sí | Resumen del mes actual y ahorro de los últimos 6 meses |
 | `POST` | `/api/v1/incomes` | Sí | Registra un ingreso |
@@ -108,7 +109,7 @@ Respuesta `200`:
 
 ```json
 {
-  "token": "137c6fba817ace5f220542ca39382f7e5f912594",
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidmVyIjowLCJleHAiOjE3OTI4NTE0Njh9.8MJB4OR7Qc_72t9ro1acP08WEcaWhkUY5JVgGijaYZI",
   "user": "admin"
 }
 ```
@@ -136,11 +137,11 @@ curl -X POST http://localhost:3000/api/v1/register \
   -d '{"user":"prueba1","email":"prueba1@example.com","password":"clave1234","password_confirmation":"clave1234"}'
 ```
 
-Si sale bien, `201`:
+Si sale bien, `201` (el token está abreviado en este ejemplo):
 
 ```json
 {
-  "token": "65f3a9e8579905085fc415e8317b79af722ade18",
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
   "user": "prueba1"
 }
 ```
@@ -155,6 +156,22 @@ Si hay datos inválidos, `422` con la lista de errores (por ahora los mensajes e
   ]
 }
 ```
+
+### `DELETE /api/v1/logout`
+
+Cierra la sesión. El token usado en el pedido deja de servir, y también cualquier otro token emitido antes para ese usuario. Requiere token.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TOKEN>"
+```
+
+Respuesta `204`, sin cuerpo. Si se vuelve a usar el mismo token, la API responde `401`:
+
+```json
+{ "error": "No autorizado" }
+```
+
+Para volver a entrar hay que hacer login de nuevo.
 
 ### `GET /api/v1/dashboard`
 
@@ -371,7 +388,7 @@ FinancialTip, ReferenceIndex: tablas independientes, sin relaciones.
 | Modelo | Qué representa |
 |--------|----------------|
 | `FamilyGroup` | Grupo familiar, con su porcentaje de ahorro objetivo (0 a 100) |
-| `User` | Usuario del grupo. Tiene contraseña con `has_secure_password`, un `auth_token` para la API y el flag `admin` para el back-office |
+| `User` | Usuario del grupo. Tiene contraseña con `has_secure_password`, un `token_version` que invalida los tokens de la API al cerrar sesión y el flag `admin` para el back-office |
 | `Income` | Ingreso de un usuario (monto mayor a 0 y fecha) |
 | `Expense` | Gasto con categoría, comercio opcional, canal de compra (`presencial`, `delivery`, `retiro`), indicador de gasto fijo y una imagen de comprobante adjuntable (Active Storage) |
 | `ExpenseItem` | Ítem de un gasto: nombre, cantidad, unidad (`unidad`, `kg`, `g`) y precio unitario |

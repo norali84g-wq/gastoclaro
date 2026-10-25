@@ -4,7 +4,7 @@ class Api::V1::ExpensesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @familia = FamilyGroup.create!(name: "Familia de prueba")
     @user = User.create!(user: "tester", password: "password123", family_group: @familia)
-    @headers = { "Authorization" => "Bearer #{@user.auth_token}" }
+    @headers = { "Authorization" => "Bearer #{AuthToken.encode(@user)}" }
     @categoria = Category.create!(name: "Supermercado")
 
     @otra_familia = FamilyGroup.create!(name: "Otra familia")

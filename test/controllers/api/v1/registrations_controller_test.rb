@@ -22,7 +22,7 @@ class Api::V1::RegistrationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :created
     user = User.find_by(user: "nueva")
-    assert_equal user.auth_token, response.parsed_body["token"]
+    assert_equal AuthToken.encode(user), response.parsed_body["token"]
     assert_equal "nueva", response.parsed_body["user"]
     assert_not user.admin?
   end

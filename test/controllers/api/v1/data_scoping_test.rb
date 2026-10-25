@@ -16,7 +16,7 @@ class Api::V1::DataScopingTest < ActionDispatch::IntegrationTest
   end
 
   def headers_for(user)
-    { "Authorization" => "Bearer #{user.auth_token}" }
+    { "Authorization" => "Bearer #{AuthToken.encode(user)}" }
   end
 
   test "un usuario comun ve solo sus propios gastos" do

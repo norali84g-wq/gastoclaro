@@ -7,7 +7,7 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     @familia = FamilyGroup.create!(name: "Familia de prueba", savings_percentage: 20)
     @user = User.create!(user: "tester", password: "password123", family_group: @familia)
     @pareja = User.create!(user: "pareja", password: "password123", family_group: @familia)
-    @headers = { "Authorization" => "Bearer #{@user.auth_token}" }
+    @headers = { "Authorization" => "Bearer #{AuthToken.encode(@user)}" }
 
     @otra_familia = FamilyGroup.create!(name: "Otra familia")
     @otro_user = User.create!(user: "otro", password: "password123", family_group: @otra_familia)

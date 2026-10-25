@@ -15,11 +15,8 @@ class User < ApplicationRecord
   validates :password, length: { minimum: PASSWORD_MIN_LENGTH }, on: :registration
   validates :password_confirmation, presence: true, on: :registration
 
-  before_create :generate_auth_token
-
-  private
-
-  def generate_auth_token
-    self.auth_token = SecureRandom.hex(20)
+  # Invalida todos los tokens emitidos para este usuario (se usa en el logout).
+  def revoke_tokens!
+    increment!(:token_version)
   end
 end

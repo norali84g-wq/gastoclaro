@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_23_122500) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_23_150000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -150,14 +150,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_23_122500) do
 
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
-    t.string "auth_token"
     t.datetime "created_at", null: false
     t.string "email"
     t.integer "family_group_id", null: false
     t.string "password_digest", null: false
+    t.integer "token_version", default: 0, null: false
     t.datetime "updated_at", null: false
     t.string "user", null: false
-    t.index ["auth_token"], name: "index_users_on_auth_token", unique: true
     t.index ["email"], name: "index_users_on_email_unique", unique: true, where: "email IS NOT NULL AND email != ''"
     t.index ["family_group_id"], name: "index_users_on_family_group_id"
     t.index ["user"], name: "index_users_on_user", unique: true
