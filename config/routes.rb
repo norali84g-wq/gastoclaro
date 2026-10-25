@@ -34,6 +34,7 @@ Rails.application.routes.draw do
       get "categories", to: "categories#index"
       get "expenses", to: "expenses#index"
       post "expenses", to: "expenses#create"
+      get "users", to: "users#index"
     end
   end
 end
