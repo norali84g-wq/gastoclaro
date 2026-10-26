@@ -272,7 +272,7 @@ curl -X POST http://localhost:3000/api/v1/expenses \
 { "errors": [ { "field": "purchase_channel", "message": "no es válido" } ] }
 ```
 
-Un `vendor_id` que no existe devuelve `422` con `field` `vendor_id` y el mensaje "no existe". Un `category_id` que no existe también devuelve `422`, pero el `field` es `category` (no `category_id`) y el mensaje "debe existir". Si `purchase_channel` o `vendor_id` son inválidos, la API responde solo ese error y no valida el resto de los campos en la misma respuesta.
+Un `vendor_id` que no existe devuelve `422` con `field` `vendor_id` y el mensaje "no existe". Un `category_id` que no existe también devuelve `422`, con `field` `category_id` y el mensaje "debe existir". Si hay varios campos inválidos, la API los devuelve todos juntos en la misma respuesta.
 
 ### `PATCH /expenses/:id` (falta)
 
