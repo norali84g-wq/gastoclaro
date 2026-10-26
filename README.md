@@ -375,7 +375,6 @@ Sin token, `401`. Con el token de un usuario común, `403`:
 ### Notas sobre la API
 
 - Los mensajes de error están en español y salen de `config/locales/es.yml`.
-- Cuando el `purchase_channel` o el `vendor_id` son inválidos, la API responde solo ese error y no valida el resto de los campos en la misma respuesta.
 - Las categorías son globales; los gastos y el dashboard se limitan al usuario: cada uno ve solo lo suyo y el admin ve todo.
 
 ## Modelo de datos

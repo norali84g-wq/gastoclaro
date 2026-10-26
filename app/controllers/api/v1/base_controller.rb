@@ -50,8 +50,15 @@ class Api::V1::BaseController < ActionController::API
 
   # Errores de validación de un registro (422), uno por campo.
   def render_record_errors(record)
-    errors = record.errors.map { |error| { field: error.attribute.to_s, message: error.message } }
+    errors = record.errors.map { |error| { field: error_field(record, error), message: error.message } }
     render json: { errors: errors }, status: :unprocessable_entity
+  end
+
+  # Un error de asociación (category) se informa con su clave foránea (category_id),
+  # que es el nombre del campo que envía el front.
+  def error_field(record, error)
+    reflection = record.class.reflect_on_association(error.attribute)
+    reflection&.belongs_to? ? reflection.foreign_key.to_s : error.attribute.to_s
   end
 
   # Traduce un mensaje de la API en el idioma de la API, incluso fuera del around_action.

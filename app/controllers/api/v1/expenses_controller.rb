@@ -10,11 +10,10 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   def create
     expense = current_user.expenses.new(expense_params)
 
+    # Se valida todo junto para devolver todos los errores en una sola respuesta.
+    expense.validate
     expense.errors.add(:vendor_id, :not_found) unless vendor_valido?
-
-    if params[:purchase_channel].present? && !Expense.purchase_channels.key?(params[:purchase_channel])
-      expense.errors.add(:purchase_channel, :invalid)
-    end
+    expense.errors.add(:purchase_channel, :invalid) if purchase_channel_invalido?
 
     if expense.errors.empty? && expense.save
       render json: expense_json(expense), status: :created
@@ -33,6 +32,10 @@ class Api::V1::ExpensesController < Api::V1::BaseController
     return true if vendor_id.blank?
 
     (vendor_id.is_a?(String) || vendor_id.is_a?(Integer)) && Vendor.exists?(id: vendor_id)
+  end
+
+  def purchase_channel_invalido?
+    params[:purchase_channel].present? && !Expense.purchase_channels.key?(params[:purchase_channel])
   end
 
   # purchase_channel se saca de los params permitidos hasta validarlo, porque un valor

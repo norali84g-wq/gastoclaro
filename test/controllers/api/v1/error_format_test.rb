@@ -65,4 +65,23 @@ class Api::V1::ErrorFormatTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_equal [ { "field" => "purchase_channel", "message" => "no es válido" } ], response.parsed_body["errors"]
   end
+
+  test "422 con una categoria inexistente informa category_id" do
+    post "/api/v1/expenses",
+         params: { amount: 100, date: Date.current, category_id: 999_999 },
+         headers: headers_for(@comun)
+
+    assert_response :unprocessable_entity
+    assert_equal [ { "field" => "category_id", "message" => "debe existir" } ], response.parsed_body["errors"]
+  end
+
+  test "422 en gastos informa todos los errores juntos" do
+    post "/api/v1/expenses",
+         params: { amount: 100, category_id: @categoria.id, vendor_id: 999_999, purchase_channel: "paloma" },
+         headers: headers_for(@comun)
+
+    assert_response :unprocessable_entity
+    campos = response.parsed_body["errors"].map { |error| error["field"] }
+    assert_equal %w[date purchase_channel vendor_id], campos.sort
+  end
 end
