@@ -1,0 +1,20 @@
+es:
+  api:
+    errors:
+      unauthorized: "No autorizado"
+      forbidden: "Acceso denegado"
+      not_found: "No encontrado"
+      invalid_credentials: "Usuario o contraseña incorrectos"
+
+  errors:
+    messages:
+      # Se usa en vendor_id cuando el comercio no existe.
+      not_found: "no existe"
+      # Igual que en el contrato de la API (api.md).
+      greater_than: "debe ser mayor a %{count}"
+
+  activerecord:
+    attributes:
+      user:
+        password: "contraseña"
+        password_confirmation: "confirmación de contraseña"

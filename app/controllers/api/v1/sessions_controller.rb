@@ -6,7 +6,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
     if user&.authenticate(params[:password])
       render json: { token: AuthToken.encode(user), user: user.user }
     else
-      render json: { error: "Usuario o contraseña incorrectos" }, status: :unauthorized
+      render_error(api_t("invalid_credentials"), status: :unauthorized)
     end
   end
 

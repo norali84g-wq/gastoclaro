@@ -70,3 +70,5 @@ end
 gem "json", "2.21.2"
 
 gem "jwt", "~> 3.3"
+
+gem "rails-i18n", "~> 8.1"

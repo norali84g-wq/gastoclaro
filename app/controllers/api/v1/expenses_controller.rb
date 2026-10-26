@@ -10,16 +10,16 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   def create
     expense = current_user.expenses.new(expense_params)
 
-    expense.errors.add(:vendor_id, "no existe") unless vendor_valido?
+    expense.errors.add(:vendor_id, :not_found) unless vendor_valido?
 
     if params[:purchase_channel].present? && !Expense.purchase_channels.key?(params[:purchase_channel])
-      expense.errors.add(:purchase_channel, "no es válido")
+      expense.errors.add(:purchase_channel, :invalid)
     end
 
     if expense.errors.empty? && expense.save
       render json: expense_json(expense), status: :created
     else
-      render json: { errors: expense.errors.full_messages }, status: :unprocessable_entity
+      render_record_errors(expense)
     end
   end
 
