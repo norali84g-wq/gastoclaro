@@ -27,6 +27,10 @@ Este documento es el acuerdo entre el back-end (Rails) y el front-end (React). L
 - **Montos:** se devuelven como **string decimal** (por ejemplo `"450000.0"`). Al enviar, se aceptan números.
 - **Fechas:** `YYYY-MM-DD`. Los períodos del dashboard, `YYYY-MM`.
 - **Recurso de otro usuario:** devuelve `404`, no `403`, para no revelar que existe.
+- **Valores cerrados:** `purchase_channel` es `presencial`, `delivery` o `retiro`. `unit` (en los ítems de un gasto) es `unidad`, `kg` o `g`. La API devuelve estos códigos tal cual; el front los traduce para mostrarlos.
+- **CORS:** la API acepta pedidos del origen configurado en la variable de entorno `FRONTEND_URL` (en desarrollo, `http://localhost:5173`) y acepta el header `Authorization`. El origen se nombra siempre de forma explícita, nunca con `*`.
+- **Alcance del TP2:** las categorías son planas (`parent_id` y `tracks_installments` valen siempre `null` y el front los ignora) y el comercio (`vendor_id`) no se usa: no hay endpoint para listar comercios.
+- **Vencimiento del token:** `POST /login` y `POST /register` devuelven `expires_at` (ISO 8601 con zona horaria) para avisar al usuario antes de que se caiga la sesión. Aun así, el front tiene que manejar un `401` en cualquier pedido: el token puede dejar de servir antes, por ejemplo si se cierra la sesión desde otro dispositivo.
 
 ## Formato de errores
 
@@ -37,6 +41,12 @@ Todos los errores usan la misma forma, igual que el contrato del TFI. `field` es
 ```
 
 El front usa `field` para marcar el campo del formulario con error. Si `field` es `"base"`, muestra el mensaje como aviso general.
+
+Reglas:
+
+- El `field` se llama igual que el campo que el front envió (por ejemplo `category_id`, no `category`).
+- Un `422` trae **todos** los errores de validación juntos, no solo el primero.
+- Excepción conocida: los errores de los ítems de un gasto llegan como `expense_items.name`, no como `expense_items_attributes[0][name]`.
 
 | HTTP | Cuándo ocurre | Ejemplo de `field` y `message` |
 |:----:|---------------|-------------------------------|
@@ -50,13 +60,14 @@ El front usa `field` para marcar el campo del formulario con error. Si `field` e
 
 | Método | Ruta | Protegido | Permiso | Estado |
 |--------|------|:---------:|---------|:------:|
-| POST | `/login` | No | — | cambia (errores) |
+| POST | `/login` | No | — | cambia (errores y usuario) |
 | DELETE | `/logout` | Sí | cualquier usuario | existe |
-| POST | `/register` | No | — | cambia (errores) |
+| POST | `/register` | No | — | cambia (errores y usuario) |
 | GET | `/me` | Sí | cualquier usuario | falta |
 | GET | `/dashboard` | Sí | cualquier usuario | cambia (nombres de campos) |
 | GET | `/categories` | Sí | cualquier usuario | existe |
-| GET | `/expenses` | Sí | cualquier usuario | existe |
+| GET | `/expenses` | Sí | cualquier usuario | cambia (período, tope y usuario) |
+| GET | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | POST | `/expenses` | Sí | cualquier usuario | cambia (errores) |
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | DELETE | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
@@ -74,7 +85,7 @@ Más adelante se prevén endpoints de metas de ahorro y compras en cuotas. Se ag
 
 ### `POST /login`
 
-Público. Devuelve el token.
+Público. Devuelve el token, cuándo vence y los datos del usuario (la misma forma que `GET /me`).
 
 | Campo | Tipo | Obligatorio | Validación |
 |-------|------|:-----------:|------------|
@@ -90,7 +101,11 @@ curl -X POST http://localhost:3000/api/v1/login \
 `200`:
 
 ```json
-{ "token": "eyJhbGciOiJIUzI1NiJ9...", "user": "admin" }
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "expires_at": "2026-10-27T03:14:00-03:00",
+  "user": { "id": 1, "user": "admin", "email": null, "admin": true }
+}
 ```
 
 `401` con credenciales incorrectas:
@@ -119,7 +134,11 @@ curl -X POST http://localhost:3000/api/v1/register \
 `201`:
 
 ```json
-{ "token": "eyJhbGciOiJIUzI1NiJ9...", "user": "prueba1" }
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "expires_at": "2026-10-27T03:14:00-03:00",
+  "user": { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
+}
 ```
 
 `422` con datos inválidos:
@@ -135,7 +154,7 @@ curl -X POST http://localhost:3000/api/v1/register \
 
 ### `DELETE /logout`
 
-Protegido. Invalida el token usado y cualquier otro emitido antes para ese usuario.
+Protegido. Invalida el token usado y cualquier otro emitido antes para ese usuario. Cierra la sesión en todos los dispositivos, a propósito: si alguien copió un token, el logout lo invalida igual.
 
 ```bash
 curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TOKEN>"
@@ -149,7 +168,7 @@ curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TO
 
 ### `GET /me` (falta)
 
-Protegido. Devuelve el usuario del token. Sirve para que el front sepa quién está logueado y si es admin al recargar la página.
+Protegido. Devuelve el usuario del token. Sirve para que el front sepa quién está logueado y si es admin al recargar la página. El campo `admin` sirve solo para decidir qué mostrar; los permisos los controla siempre la API.
 
 `200`:
 
@@ -179,7 +198,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
   "savings": "411899.0",
   "savings_goal_percentage": 10,
   "incomes": [
-    { "id": 1, "user": "admin", "amount": "450000.0", "date": "2026-09-01" }
+    { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
   "consumption_by_category": [
     { "category": "Servicios", "total": "25000.0" },
@@ -201,7 +220,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 
 ### `GET /categories`
 
-Protegido. Lista todas las categorías (globales), ordenadas por nombre.
+Protegido. Lista todas las categorías (globales), ordenadas por nombre. En el TP2 son planas: `parent_id` y `tracks_installments` valen siempre `null` y el front los ignora.
 
 `200`:
 
@@ -218,7 +237,7 @@ Protegido. Lista todas las categorías (globales), ordenadas por nombre.
 
 ### `GET /expenses`
 
-Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve los de todos).
+Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve los de todos). Parámetro opcional `?period=YYYY-MM` para traer solo un mes. La respuesta tiene un tope de 100 gastos, sin paginación.
 
 `200`:
 
@@ -231,7 +250,7 @@ Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve lo
     "description": "Compra semanal",
     "is_fixed": false,
     "purchase_channel": "presencial",
-    "user_id": 1,
+    "user": { "id": 1, "user": "admin" },
     "vendor_id": 1,
     "category": { "id": 1, "name": "Supermercado" },
     "expense_items": [
@@ -240,6 +259,10 @@ Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve lo
   }
 ]
 ```
+
+### `GET /expenses/:id` (falta)
+
+Protegido. Devuelve un gasto, con la misma forma que un elemento de `GET /expenses`. `404` si no existe o no es del usuario.
 
 ### `POST /expenses`
 
@@ -251,12 +274,12 @@ Protegido. El gasto queda a nombre del usuario del token.
 | `category_id` | integer | Sí | tiene que existir |
 | `amount` | number | Sí, si no hay ítems | mayor a 0 |
 | `description` | string | No | — |
-| `vendor_id` | integer | No | tiene que existir |
+| `vendor_id` | integer | No | tiene que existir. No se usa en el TP2: el front no lo envía |
 | `is_fixed` | boolean | No | por defecto `false` |
 | `purchase_channel` | string | No | `presencial`, `delivery` o `retiro` (por defecto `presencial`) |
-| `expense_items_attributes` | array | No | cada ítem: `name`, `quantity`, `unit` (`unidad`, `kg`, `g`), `unit_price` |
+| `expense_items_attributes` | array | No | cada ítem: `name` (obligatorio), `quantity` (mayor a 0), `unit` (`unidad`, `kg` o `g`), `unit_price` (mayor o igual a 0) |
 
-Si se envían ítems, `amount` se calcula como la suma de `quantity × unit_price` y reemplaza al enviado.
+Si se envían ítems, el front no envía `amount`: lo calcula el servidor como la suma de `quantity × unit_price`. Si llegaran los dos, gana el calculado y no es un error.
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/expenses \
