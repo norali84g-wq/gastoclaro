@@ -70,3 +70,6 @@ end
 gem "json", "2.21.2"
 
 gem "jwt", "~> 3.3"
+
+# image_processing 2.x no incluye ruby-vips; Active Storage lo necesita
+gem "ruby-vips", "~> 2.0"
