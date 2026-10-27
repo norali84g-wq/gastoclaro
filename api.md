@@ -24,7 +24,7 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 | CORS | no hay `cors.rb` | PR #25 |
 | `expires_at` en login y register | no se devuelve | PR #39 |
 | `422` con `field: "period"` si `?period` es inválido | no valida | sin PR todavía |
-| `422` si un ítem de gasto llega sin `name` | el ítem se descarta en silencio | PR aparte |
+| `422` si un ítem de gasto llega sin `name` (en `POST` y `PATCH`) | el ítem se descarta en silencio | PR aparte |
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
 | `400` si el JSON está mal formado | Rails responde con su propio formato | sin PR todavía |
 | Categorías de ejemplo en `db/seeds.rb` (Supermercado y Limpieza) | el seed no crea categorías | PR aparte |
@@ -43,7 +43,7 @@ Además de lo marcado `cambia` o `falta` en el resumen de endpoints.
   Authorization: Bearer <TOKEN>
   ```
 
-  El token **vence a las 24 horas**. `POST /login` y `POST /register` devuelven `expires_at` (ISO 8601 con zona horaria) para avisar al usuario antes de que se caiga la sesión. `DELETE /logout` lo invalida antes. Aun así, el front tiene que manejar un `401` en cualquier pedido: el token puede dejar de servir antes, por ejemplo si se cierra la sesión desde otro dispositivo.
+  El token **vence a las 24 horas**. `POST /login` y `POST /register` devuelven `expires_at` (ISO 8601, en UTC: por ejemplo `2026-10-27T06:14:00Z`) para avisar al usuario antes de que se caiga la sesión. `DELETE /logout` lo invalida antes. Aun así, el front tiene que manejar un `401` en cualquier pedido: el token puede dejar de servir antes, por ejemplo si se cierra la sesión desde otro dispositivo.
 - **Parámetro de ruta `:id`:** siempre es un entero positivo. Un `:id` que no existe o es de otro usuario devuelve `404`.
 - **Montos:** se devuelven como **string decimal** (por ejemplo `"450000.0"`). Al enviar, se aceptan números.
 - **Fechas:** solo se admite `YYYY-MM-DD`. Los períodos, `YYYY-MM`. Una fecha que no existe (`2026-02-30`) devuelve `422` con `field` `date` y el mensaje "no puede estar en blanco": la API no distingue entre una fecha vacía y una inexistente. Con otros formatos (por ejemplo `05/09/2026`) el resultado **no está garantizado**: Rails puede interpretarlos y guardar otra fecha sin dar error, así que el front siempre envía el formato ISO.
@@ -199,7 +199,7 @@ curl -X POST http://localhost:3000/api/v1/login \
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "expires_at": "2026-10-27T03:14:00-03:00",
+  "expires_at": "2026-10-27T06:14:00Z",
   "user": { "id": 1, "user": "admin", "email": null, "admin": true }
 }
 ```
@@ -232,7 +232,7 @@ curl -X POST http://localhost:3000/api/v1/register \
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "expires_at": "2026-10-27T03:14:00-03:00",
+  "expires_at": "2026-10-27T06:14:00Z",
   "user": { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
 }
 ```
@@ -498,7 +498,7 @@ curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
   -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
 ```
 
-**Atención 1:** hoy, un ítem editado que llega sin `name` se ignora sin dar error: el cambio no se aplica y la respuesta es `200`. Cuando se agregue la validación de ítems sin nombre, se evalúa pedir `name` solo en los ítems nuevos.
+**Atención 1:** un ítem con `id` que llega sin `name` da `422`, igual que en `POST`. El borrado (`_destroy`) no necesita `name`. Esta regla la implementa el PR de validación de ítems.
 
 `amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
 
