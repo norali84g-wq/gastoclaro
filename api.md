@@ -1,6 +1,7 @@
 # Contrato de la API — GastoClaro
 
-**Fecha:** 20/10/2026 · **Base URL:** `/api/v1` · **Formato:** JSON (`Content-Type: application/json`)
+**Versión:** 0.2 (borrador para revisión de Juan y Nico) · **Autora:** Norali · **Fecha:** 20/10/2026
+**Base URL:** `/api/v1` · **Formato:** JSON (`Content-Type: application/json`)
 
 Este documento es el acuerdo entre front y back. Lo que está acá es lo que el front puede usar; si hay que cambiar algo, se cambia acá primero y se avisa por Trello.
 
@@ -11,6 +12,19 @@ Este documento es el acuerdo entre front y back. Lo que está acá es lo que el 
 | 1. Convenciones, 2. Autenticación, 3. Categorías | **Completas** |
 | 4. Gastos e ingresos, 5. Tarjetas, 6. Compras en cuotas, 7. Presupuestos, 8. Ahorro | Rutas, campos, reglas y errores. Falta un ejemplo de respuesta por endpoint |
 | 9. Informes, 10. Análisis | Rutas y reglas de cálculo; el detalle de las respuestas se completa después |
+
+## Cambios respecto a la v0.1
+
+1. **Montos en centavos enteros** (`amount_cents`), no strings. Así lo pide `lineamientos.md` (sección 6).
+2. **Errores 422** con `field` y `message`, para que el front marque el campo con error.
+3. **Cuerpos con envoltorio** (`{ "expense": { ... } }`), como Rails y como el ejemplo de los lineamientos.
+4. **Ahorro con metas** (sección 8): `savings_goals` y aportes. El aporte no es un gasto. La categoría ya no tiene `bucket: savings`.
+5. **Pagos de tarjeta separados del resumen** (`/card_statements/:id/payments`): permite pagos parciales. Reemplaza a `/pay`.
+6. **El redondeo de las cuotas va en la última cuota** (antes decía la primera).
+7. **`price_indices`**: solo lectura para el usuario. Se carga desde el back-office.
+8. **`recurring_rule_id`** en gastos e ingresos, y `next_run_on` en las reglas.
+9. **Alertas persistidas** (`budget_alerts`) con `read_at`.
+10. **Presupuestos**: el real incluye cuotas, y el de una categoría padre incluye a sus subcategorías.
 
 ---
 
@@ -437,7 +451,7 @@ La inflación personal se calcula por categoría. Hacerla por producto requiere 
 
 ## 11. Decisiones tomadas en este contrato
 
-1. **Token opaco con tabla `sessions`** (y no JWT puro) para poder invalidarlo al cerrar sesión, como pide HU-03.
+1. **Token opaco con tabla `sessions`** (y no JWT puro) para poder invalidarlo al cerrar sesión, como pide HU-03. *Los lineamientos (7.2) dicen JWT: hay que actualizarlos.*
 2. **Montos en centavos enteros** para evitar errores de redondeo, como se enseñó en Programación IV.
 3. **`404` en recursos de otro usuario**, no `403`.
 4. **Todo es personal:** no hay grupos ni gastos compartidos en el alcance.
@@ -445,4 +459,4 @@ La inflación personal se calcula por categoría. Hacerla por producto requiere 
 6. **El ahorro no es un gasto:** se registra con aportes a metas.
 7. **Obligación y pago separados:** el resumen de tarjeta es lo que hay que pagar; el pago es lo que se pagó, y puede ser parcial.
 8. **Los datos derivados no se guardan:** total del resumen, avance de la meta, saldo, estado de pago.
-9. **Los campos de fecha de gastos e ingresos son `spent_on` y `received_on`.**
+9. **Los nombres de campos de fecha son `spent_on` y `received_on`** (el ejemplo de los lineamientos usa `date`: hay que corregirlo).
