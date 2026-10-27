@@ -25,8 +25,11 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 | `expires_at` en login y register | no se devuelve | sin PR todavía |
 | `422` con `field: "period"` si `?period` es inválido | no valida | sin PR todavía |
 | `422` si un ítem de gasto llega sin `name` | el ítem se descarta en silencio | PR aparte |
+| `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
 | `400` si el JSON está mal formado | Rails responde con su propio formato | sin PR todavía |
 | Categorías de ejemplo en `db/seeds.rb` (Supermercado y Limpieza) | el seed no crea categorías | PR aparte |
+
+Además de lo marcado `cambia` o `falta` en el resumen de endpoints.
 
 ## Convenciones
 
@@ -43,11 +46,11 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
   El token **vence a las 24 horas**. `POST /login` y `POST /register` devuelven `expires_at` (ISO 8601 con zona horaria) para avisar al usuario antes de que se caiga la sesión. `DELETE /logout` lo invalida antes. Aun así, el front tiene que manejar un `401` en cualquier pedido: el token puede dejar de servir antes, por ejemplo si se cierra la sesión desde otro dispositivo.
 - **Parámetro de ruta `:id`:** siempre es un entero positivo. Un `:id` que no existe o es de otro usuario devuelve `404`.
 - **Montos:** se devuelven como **string decimal** (por ejemplo `"450000.0"`). Al enviar, se aceptan números.
-- **Fechas:** `YYYY-MM-DD`. Los períodos, `YYYY-MM`. Una fecha inexistente (`2026-02-30`) o con otro formato (`05/09/2026`) devuelve `422` con `field` `date` y el mensaje "no puede estar en blanco": la API no distingue entre una fecha vacía y una inválida.
+- **Fechas:** solo se admite `YYYY-MM-DD`. Los períodos, `YYYY-MM`. Una fecha que no existe (`2026-02-30`) devuelve `422` con `field` `date` y el mensaje "no puede estar en blanco": la API no distingue entre una fecha vacía y una inexistente. Con otros formatos (por ejemplo `05/09/2026`) el resultado **no está garantizado**: Rails puede interpretarlos y guardar otra fecha sin dar error, así que el front siempre envía el formato ISO.
 - **Recurso de otro usuario:** devuelve `404`, no `403`, para no revelar que existe.
 - **Valores cerrados:** `purchase_channel` es `presencial`, `delivery` o `retiro`. `unit` (en los ítems de un gasto) es `unidad`, `kg` o `g`. La API devuelve estos códigos tal cual; el front los traduce para mostrarlos.
 - **CORS:** la API acepta pedidos del origen configurado en la variable de entorno `FRONTEND_URL` (en desarrollo, `http://localhost:5173`) y acepta el header `Authorization`. El origen se nombra siempre de forma explícita, nunca con `*`.
-- **Alcance del TP2:** el comercio (`vendor_id`) no se usa: vale siempre `null` y no hay endpoint para listar comercios. Las categorías son planas (`parent_id` y `tracks_installments` valen siempre `null`) y el front los ignora.
+- **Alcance del TP2:** el comercio (`vendor_id`) no se usa: el front lo ignora y no hay endpoint para listar comercios (puede traer valor si el gasto se cargó desde el panel admin). Las categorías son planas (`parent_id` y `tracks_installments` valen siempre `null`) y el front los ignora.
 
 ## Cómo reproducir los ejemplos
 
@@ -108,7 +111,7 @@ El `404` de cualquier endpoint con `:id` responde:
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | DELETE | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | GET | `/incomes` | Sí | cualquier usuario | falta |
-| POST | `/incomes` | Sí | cualquier usuario | cambia (errores) |
+| POST | `/incomes` | Sí | cualquier usuario | cambia (errores y usuario) |
 | PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
 | DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
 | GET | `/users` | Sí | solo admin | cambia (errores) |
@@ -148,7 +151,7 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 | `is_fixed` | boolean | No | `true` si es un gasto fijo |
 | `purchase_channel` | string | No | `presencial`, `delivery` o `retiro` |
 | `user` | objeto `{ id, user }` | No | a quién pertenece |
-| `vendor_id` | integer | **Sí** | siempre `null` en el TP2 |
+| `vendor_id` | integer | **Sí** | el front lo ignora. Puede traer valor si el gasto se cargó desde el panel admin |
 | `category` | objeto `{ id, name }` | No | categoría |
 | `expense_items` | array de Ítem | No | puede venir vacío (`[]`) |
 
@@ -408,7 +411,7 @@ Cada ítem de `expense_items_attributes`:
 | Campo | Tipo | Obligatorio | Validación |
 |-------|------|:-----------:|------------|
 | `name` | string | Sí | no puede estar vacío. Si falta, responde `422` con `field` `expense_items.name` (`falta`: hoy el ítem sin nombre se descarta en silencio) |
-| `quantity` | integer | No | entero mayor a 0; por defecto `1`. **No admite decimales**: para fracciones, usá `g` (1,5 kg = `1500` con `unit` `g`) |
+| `quantity` | integer | No | entero mayor a 0; por defecto `1`. **No admite decimales**: para fracciones, usá `g` (1,5 kg = `1500` con `unit` `g`). Un decimal **no da error**: se recorta (`1.5` se guarda como `1` y `0.5` como `0`), así que el front tiene que validarlo antes de enviar |
 | `unit` | string | No | `unidad`, `kg` o `g`; por defecto `unidad` |
 | `unit_price` | number | Sí | mayor o igual a 0 |
 
@@ -487,15 +490,17 @@ curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
 
 `200`: el gasto actualizado, con la forma **Gasto**. `404` si no existe o no es del usuario. `422` si hay datos inválidos.
 
-**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id`. Para borrarlo, se envía su `id` con `"_destroy": true`. Un ítem sin `id` se crea nuevo:
+**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id` **y también su `name`**. Para borrarlo, se envía su `id` con `"_destroy": true` (el borrado no necesita `name`). Un ítem sin `id` se crea nuevo:
 
 ```bash
 curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"expense_items_attributes":[{"id":1,"quantity":3},{"id":2,"_destroy":true}]}'
+  -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
 ```
 
-`amount` se recalcula con los ítems que quedan. **Atención:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
+**Atención 1:** hoy, un ítem editado que llega sin `name` se ignora sin dar error: el cambio no se aplica y la respuesta es `200`. Cuando se agregue la validación de ítems sin nombre, se evalúa pedir `name` solo en los ítems nuevos.
+
+`amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
 
 ### `DELETE /expenses/:id` (falta)
 
