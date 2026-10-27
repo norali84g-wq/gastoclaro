@@ -22,7 +22,7 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 | Mensajes de error en español | en inglés (falta `es.yml`) | PR #37 |
 | `GET /me` y usuario en la respuesta de login y register | no existe | PR #39 |
 | CORS | no hay `cors.rb` | PR #25 |
-| `expires_at` en login y register | no se devuelve | sin PR todavía |
+| `expires_at` en login y register | no se devuelve | PR #39 |
 | `422` con `field: "period"` si `?period` es inválido | no valida | sin PR todavía |
 | `422` si un ítem de gasto llega sin `name` | el ítem se descarta en silencio | PR aparte |
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
