@@ -103,7 +103,7 @@ El `404` de cualquier endpoint con `:id` responde:
 | DELETE | `/logout` | Sí | cualquier usuario | existe |
 | POST | `/register` | No | — | cambia (errores, usuario y `expires_at`) |
 | GET | `/me` | Sí | cualquier usuario | falta |
-| GET | `/dashboard` | Sí | cualquier usuario | cambia (nombres de campos) |
+| GET | `/dashboard` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | GET | `/expenses` | Sí | cualquier usuario | cambia (período, tope y usuario) |
 | GET | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
@@ -288,7 +288,7 @@ Protegido. Resumen del **mes en curso** del usuario (el admin ve el de todos). S
 curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 ```
 
-`200` (nombres **nuevos**; hoy el back devuelve versiones en español de estos campos y cambia en un PR aparte):
+`200`:
 
 ```json
 {
