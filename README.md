@@ -46,6 +46,8 @@ La app queda en <http://localhost:3000>. En desarrollo, los mails que envía la 
 
 Si el front corre en otro puerto, levantá el servidor así: `FRONTEND_URL=http://localhost:5174 bin/rails server`.
 
+**Antes de desplegar:** en `config/deploy.yml` la variable `FRONTEND_URL` está comentada. Hay que descomentarla y poner la URL real del front; sin ella la app no arranca en producción.
+
 ## Back-office (panel de administración)
 
 - **URL de acceso:** <http://localhost:3000/admin/login>
