@@ -8,12 +8,17 @@ es:
 
   errors:
     messages:
-      # Se usa en vendor_id cuando el comercio no existe.
-      not_found: "no existe"
       # Igual que en el contrato de la API (api.md).
       greater_than: "debe ser mayor a %{count}"
 
   activerecord:
+    errors:
+      models:
+        expense:
+          attributes:
+            vendor_id:
+              # Se usa cuando el comercio no existe.
+              not_found: "no existe"
     attributes:
       user:
         password: "contraseña"
