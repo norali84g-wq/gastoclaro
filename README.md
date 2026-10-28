@@ -67,7 +67,7 @@ La API devuelve y recibe JSON. Todas las rutas cuelgan de `/api/v1` y, salvo el 
 
 ### Autenticación
 
-1. Hacé `POST /api/v1/login` con `user` y `password`. La respuesta trae el `token` del usuario.
+1. Hacé `POST /api/v1/login` con `user` y `password`. La respuesta trae el `token`, cuándo vence (`expires_at`) y los datos del usuario.
 2. En cada request siguiente enviá el token en el header `Authorization`:
 
    ```
@@ -104,6 +104,7 @@ Los textos están en `config/locales/es.yml`.
 | `POST` | `/api/v1/login` | No | Devuelve el token del usuario |
 | `DELETE` | `/api/v1/logout` | Sí | Cierra la sesión e invalida el token |
 | `POST` | `/api/v1/register` | No | Crea una cuenta nueva y devuelve su token |
+| `GET`  | `/api/v1/me` | Sí | Devuelve el usuario del token |
 | `GET`  | `/api/v1/dashboard` | Sí | Resumen del mes actual y ahorro de los últimos 6 meses |
 | `POST` | `/api/v1/incomes` | Sí | Registra un ingreso |
 | `GET`  | `/api/v1/categories` | Sí | Lista las categorías |
@@ -130,7 +131,8 @@ Respuesta `200`:
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidmVyIjowLCJleHAiOjE3OTI4NTE0Njh9.8MJB4OR7Qc_72t9ro1acP08WEcaWhkUY5JVgGijaYZI",
-  "user": "admin"
+  "expires_at": "2026-10-27T06:14:00Z",
+  "user": { "id": 1, "user": "admin", "email": null, "admin": true }
 }
 ```
 
@@ -162,7 +164,8 @@ Si sale bien, `201` (el token está abreviado en este ejemplo):
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "user": "prueba1"
+  "expires_at": "2026-10-27T06:14:00Z",
+  "user": { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
 }
 ```
 
@@ -192,6 +195,22 @@ Respuesta `204`, sin cuerpo. Si se vuelve a usar el mismo token, la API responde
 ```
 
 Para volver a entrar hay que hacer login de nuevo.
+
+### `GET /api/v1/me`
+
+Devuelve el usuario del token. Sirve para saber quién está logueado y si es administrador, por ejemplo al recargar la página. Tiene la misma forma que el `user` que devuelven el login y el registro. Requiere token.
+
+```bash
+curl http://localhost:3000/api/v1/me -H "Authorization: Bearer <TOKEN>"
+```
+
+Respuesta `200`:
+
+```json
+{ "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
+```
+
+Sin token, o con un token inválido o vencido, `401`. El campo `admin` sirve solo para decidir qué mostrar; los permisos los controla siempre la API.
 
 ### `GET /api/v1/dashboard`
 

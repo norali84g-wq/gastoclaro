@@ -11,7 +11,7 @@ class Api::V1::SessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :ok
     assert_equal @user, AuthToken.user_from(response.parsed_body["token"])
-    assert_equal "tester", response.parsed_body["user"]
+    assert_equal "tester", response.parsed_body["user"]["user"]
   end
 
   test "login con contrasena incorrecta da 401" do

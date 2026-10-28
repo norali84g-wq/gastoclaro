@@ -4,7 +4,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
   def create
     user = User.find_by(user: params[:user])
     if user&.authenticate(params[:password])
-      render json: { token: AuthToken.encode(user), user: user.user }
+      render json: SessionSerializer.call(user)
     else
       render_error(api_t("invalid_credentials"), status: :unauthorized)
     end
