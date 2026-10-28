@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Api::V1::MeTest < ActionDispatch::IntegrationTest
+class Api::V1::CurrentUserControllerTest < ActionDispatch::IntegrationTest
   setup do
     grupo = FamilyGroup.create!(name: "Grupo de prueba")
     @comun = User.create!(user: "comun", email: "comun@example.com", password: "password123", family_group: grupo)
