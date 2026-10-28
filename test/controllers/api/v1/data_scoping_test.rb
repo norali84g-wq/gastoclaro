@@ -62,7 +62,7 @@ class Api::V1::DataScopingTest < ActionDispatch::IntegrationTest
     get "/api/v1/users", headers: headers_for(@comun)
 
     assert_response :forbidden
-    assert_equal "Acceso denegado", response.parsed_body["error"]
+    assert_equal [ { "field" => "base", "message" => "Acceso denegado" } ], response.parsed_body["errors"]
   end
 
   test "listar usuarios como admin devuelve todos sin datos sensibles" do
