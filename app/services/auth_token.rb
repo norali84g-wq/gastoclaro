@@ -3,8 +3,8 @@ class AuthToken
   EXPIRATION = 24.hours
   ALGORITHM = "HS256".freeze
 
-  def self.encode(user)
-    payload = { sub: user.id.to_s, ver: user.token_version, exp: EXPIRATION.from_now.to_i }
+  def self.encode(user, expires_at = EXPIRATION.from_now)
+    payload = { sub: user.id.to_s, ver: user.token_version, exp: expires_at.to_i }
     JWT.encode(payload, secret, ALGORITHM)
   end
 
