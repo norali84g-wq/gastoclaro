@@ -72,7 +72,7 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
 
     assert_equal 1000, decimal(body["income"])
     assert_equal 200, decimal(body["consumption"])
-    assert_equal [ "tester" ], body["incomes"].map { |i| i["user"] }
+    assert_equal [ { "id" => @user.id, "user" => "tester" } ], body["incomes"].map { |i| i["user"] }
   end
 
   test "agrupa el consumo del mes por categoria" do

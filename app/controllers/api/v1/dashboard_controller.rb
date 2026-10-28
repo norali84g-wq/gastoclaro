@@ -46,7 +46,7 @@ class Api::V1::DashboardController < Api::V1::BaseController
       savings: savings,
       savings_goal_percentage: current_user.family_group.savings_percentage,
       incomes: month_incomes.includes(:user).order(:date).map { |i|
-        { id: i.id, user: i.user.user, amount: i.amount, date: i.date }
+        { id: i.id, user: { id: i.user.id, user: i.user.user }, amount: i.amount, date: i.date }
       },
       consumption_by_category: consumption_by_category.map { |category, total|
         { category: category, total: total }

@@ -230,7 +230,7 @@ Respuesta `200`:
   "savings": "411899.0",
   "savings_goal_percentage": 10,
   "incomes": [
-    { "id": 1, "user": "admin", "amount": "450000.0", "date": "2026-09-01" }
+    { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
   "consumption_by_category": [
     { "category": "Servicios", "total": "25000.0" },

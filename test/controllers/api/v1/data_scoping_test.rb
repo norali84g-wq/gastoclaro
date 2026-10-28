@@ -40,7 +40,7 @@ class Api::V1::DataScopingTest < ActionDispatch::IntegrationTest
     body = response.parsed_body
     assert_equal 1000, BigDecimal(body["income"])
     assert_equal 100, BigDecimal(body["consumption"])
-    assert_equal [ "comun" ], body["incomes"].map { |i| i["user"] }
+    assert_equal [ { "id" => @comun.id, "user" => "comun" } ], body["incomes"].map { |i| i["user"] }
   end
 
   test "el dashboard del admin suma lo de todos" do
