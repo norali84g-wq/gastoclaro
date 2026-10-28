@@ -3,7 +3,7 @@
 # FRONTEND_URL acepta uno o más orígenes separados por comas, por ejemplo
 # "http://localhost:5173,http://localhost:5174". Una barra final se ignora.
 # En desarrollo y test, si no está definida, se usa la URL de Vite.
-# En producción es obligatoria: sin ella el navegador bloquea todos los pedidos.
+# En producción es obligatoria: sin ella la app no arranca.
 module CorsConfig
   DEFAULT_ORIGIN = "http://localhost:5173".freeze
 
