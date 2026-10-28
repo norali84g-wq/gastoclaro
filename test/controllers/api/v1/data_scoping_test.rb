@@ -38,9 +38,9 @@ class Api::V1::DataScopingTest < ActionDispatch::IntegrationTest
 
     assert_response :ok
     body = response.parsed_body
-    assert_equal 1000, BigDecimal(body["ingreso"])
-    assert_equal 100, BigDecimal(body["consumo"])
-    assert_equal [ "comun" ], body["ingresos"].map { |i| i["usuario"] }
+    assert_equal 1000, BigDecimal(body["income"])
+    assert_equal 100, BigDecimal(body["consumption"])
+    assert_equal [ { "id" => @comun.id, "user" => "comun" } ], body["incomes"].map { |i| i["user"] }
   end
 
   test "el dashboard del admin suma lo de todos" do
@@ -48,8 +48,8 @@ class Api::V1::DataScopingTest < ActionDispatch::IntegrationTest
 
     assert_response :ok
     body = response.parsed_body
-    assert_equal 1500, BigDecimal(body["ingreso"])
-    assert_equal 300, BigDecimal(body["consumo"])
+    assert_equal 1500, BigDecimal(body["income"])
+    assert_equal 300, BigDecimal(body["consumption"])
   end
 
   test "listar usuarios sin token da 401" do

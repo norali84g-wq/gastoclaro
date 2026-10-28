@@ -37,12 +37,12 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     body = dashboard
 
     assert_response :ok
-    assert_equal "2026-09", body["periodo"]
-    assert_equal 0, decimal(body["ingreso"])
-    assert_equal 0, decimal(body["consumo"])
-    assert_equal 0, decimal(body["ahorro"])
-    assert_equal [], body["ingresos"]
-    assert_equal [], body["consumo_por_categoria"]
+    assert_equal "2026-09", body["period"]
+    assert_equal 0, decimal(body["income"])
+    assert_equal 0, decimal(body["consumption"])
+    assert_equal 0, decimal(body["savings"])
+    assert_equal [], body["incomes"]
+    assert_equal [], body["consumption_by_category"]
   end
 
   test "suma solo los ingresos y gastos del mes del usuario y calcula el ahorro" do
@@ -54,10 +54,10 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     body = dashboard
 
     assert_response :ok
-    assert_equal 1000, decimal(body["ingreso"])
-    assert_equal 300, decimal(body["consumo"])
-    assert_equal 700, decimal(body["ahorro"])
-    assert_equal 20, body["meta_ahorro_porcentaje"]
+    assert_equal 1000, decimal(body["income"])
+    assert_equal 300, decimal(body["consumption"])
+    assert_equal 700, decimal(body["savings"])
+    assert_equal 20, body["savings_goal_percentage"]
   end
 
   test "deja afuera otros meses y otras familias" do
@@ -70,9 +70,9 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
 
     body = dashboard
 
-    assert_equal 1000, decimal(body["ingreso"])
-    assert_equal 200, decimal(body["consumo"])
-    assert_equal [ "tester" ], body["ingresos"].map { |i| i["usuario"] }
+    assert_equal 1000, decimal(body["income"])
+    assert_equal 200, decimal(body["consumption"])
+    assert_equal [ { "id" => @user.id, "user" => "tester" } ], body["incomes"].map { |i| i["user"] }
   end
 
   test "agrupa el consumo del mes por categoria" do
@@ -80,24 +80,24 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     Expense.create!(user: @pareja, category: @comida, amount: 100, date: Date.new(2026, 9, 6))
     Expense.create!(user: @user, category: @transporte, amount: 50, date: Date.new(2026, 9, 7))
 
-    por_categoria = dashboard["consumo_por_categoria"].to_h { |c| [ c["categoria"], decimal(c["total"]) ] }
+    por_categoria = dashboard["consumption_by_category"].to_h { |c| [ c["category"], decimal(c["total"]) ] }
 
     assert_equal({ "Comida" => 300, "Transporte" => 50 }, por_categoria)
   end
 
-  test "ahorro_mensual trae los ultimos 6 meses en orden con el acumulado" do
+  test "monthly_savings trae los ultimos 6 meses en orden con el acumulado" do
     Income.create!(user: @user, amount: 500, date: Date.new(2026, 8, 10))
     Expense.create!(user: @user, category: @comida, amount: 100, date: Date.new(2026, 8, 12))
     Income.create!(user: @user, amount: 1000, date: Date.new(2026, 9, 1))
     Expense.create!(user: @user, category: @comida, amount: 400, date: Date.new(2026, 9, 5))
 
-    meses = dashboard["ahorro_mensual"]
+    meses = dashboard["monthly_savings"]
 
-    assert_equal %w[2026-04 2026-05 2026-06 2026-07 2026-08 2026-09], meses.map { |m| m["mes"] }
+    assert_equal %w[2026-04 2026-05 2026-06 2026-07 2026-08 2026-09], meses.map { |m| m["month"] }
     agosto, septiembre = meses.last(2)
-    assert_equal 400, decimal(agosto["ahorro"])
-    assert_equal 400, decimal(agosto["acumulado"])
-    assert_equal 600, decimal(septiembre["ahorro"])
-    assert_equal 1000, decimal(septiembre["acumulado"])
+    assert_equal 400, decimal(agosto["savings"])
+    assert_equal 400, decimal(agosto["accumulated"])
+    assert_equal 600, decimal(septiembre["savings"])
+    assert_equal 1000, decimal(septiembre["accumulated"])
   end
 end

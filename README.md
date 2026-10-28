@@ -114,7 +114,7 @@ Los textos están en `config/locales/es.yml`.
 
 Los ejemplos de abajo son respuestas reales, capturadas contra una instancia local con datos de prueba. El token que aparece es el de esa instancia descartable. En los ejemplos con `curl`, `<TOKEN>` es el valor que devolvió el login.
 
-> **Formato de números:** los montos (`amount`, `unit_price`, `subtotal`, `ingreso`, etc.) se devuelven como **strings** decimales (por ejemplo `"450000.0"`), no como números JSON.
+> **Formato de números:** los montos (`amount`, `unit_price`, `subtotal`, `income`, etc.) se devuelven como **strings** decimales (por ejemplo `"450000.0"`), no como números JSON.
 
 ### `POST /api/v1/login`
 
@@ -214,7 +214,7 @@ Sin token, o con un token inválido o vencido, `401`. El campo `admin` sirve sol
 
 ### `GET /api/v1/dashboard`
 
-Devuelve el resumen del **mes en curso** del usuario (si es admin, el de todos): ingresos, consumo, ahorro, consumo por categoría y la evolución de los últimos 6 meses con el ahorro acumulado. `meta_ahorro_porcentaje` es el porcentaje de ahorro definido para el grupo familiar del usuario.
+Devuelve el resumen del **mes en curso** del usuario (si es admin, el de todos): ingresos, consumo, ahorro, consumo por categoría y la evolución de los últimos 6 meses con el ahorro acumulado. `savings_goal_percentage` es el porcentaje de ahorro definido para el grupo familiar del usuario.
 
 ```bash
 curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
@@ -224,25 +224,25 @@ Respuesta `200`:
 
 ```json
 {
-  "periodo": "2026-09",
-  "ingreso": "450000.0",
-  "consumo": "38101.0",
-  "ahorro": "411899.0",
-  "meta_ahorro_porcentaje": 10,
-  "ingresos": [
-    { "id": 1, "usuario": "admin", "amount": "450000.0", "date": "2026-09-01" }
+  "period": "2026-09",
+  "income": "450000.0",
+  "consumption": "38101.0",
+  "savings": "411899.0",
+  "savings_goal_percentage": 10,
+  "incomes": [
+    { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
-  "consumo_por_categoria": [
-    { "categoria": "Servicios", "total": "25000.0" },
-    { "categoria": "Supermercado", "total": "13101.0" }
+  "consumption_by_category": [
+    { "category": "Servicios", "total": "25000.0" },
+    { "category": "Supermercado", "total": "13101.0" }
   ],
-  "ahorro_mensual": [
-    { "mes": "2026-04", "ingreso": "0.0", "consumo": "0.0", "ahorro": "0.0", "acumulado": "0.0" },
-    { "mes": "2026-05", "ingreso": "0.0", "consumo": "0.0", "ahorro": "0.0", "acumulado": "0.0" },
-    { "mes": "2026-06", "ingreso": "0.0", "consumo": "0.0", "ahorro": "0.0", "acumulado": "0.0" },
-    { "mes": "2026-07", "ingreso": "0.0", "consumo": "0.0", "ahorro": "0.0", "acumulado": "0.0" },
-    { "mes": "2026-08", "ingreso": "0.0", "consumo": "0.0", "ahorro": "0.0", "acumulado": "0.0" },
-    { "mes": "2026-09", "ingreso": "450000.0", "consumo": "38101.0", "ahorro": "411899.0", "acumulado": "411899.0" }
+  "monthly_savings": [
+    { "month": "2026-04", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
+    { "month": "2026-05", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
+    { "month": "2026-06", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
+    { "month": "2026-07", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
+    { "month": "2026-08", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
+    { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" }
   ]
 }
 ```
