@@ -18,11 +18,6 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 
 | Pieza | Hoy en `main` | Cuando entre |
 |-------|---------------|--------------|
-| Formato de errores `{ "errors": [...] }` en los `401` | `{ "error": "..." }` | PR #37 |
-| Mensajes de error en español | en inglés (falta `es.yml`) | PR #37 |
-| `GET /me` y usuario en la respuesta de login y register | no existe | PR #39 |
-| CORS | no hay `cors.rb` | PR #25 |
-| `expires_at` en login y register | no se devuelve | PR #39 |
 | `422` con `field: "period"` si `?period` es inválido | no valida | sin PR todavía |
 | `422` si un ítem de gasto llega sin `name` (en `POST` y `PATCH`) | el ítem se descarta en silencio | PR aparte |
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
@@ -99,22 +94,22 @@ El `404` de cualquier endpoint con `:id` responde:
 
 | Método | Ruta | Protegido | Permiso | Estado |
 |--------|------|:---------:|---------|:------:|
-| POST | `/login` | No | — | cambia (errores, usuario y `expires_at`) |
+| POST | `/login` | No | — | existe |
 | DELETE | `/logout` | Sí | cualquier usuario | existe |
-| POST | `/register` | No | — | cambia (errores, usuario y `expires_at`) |
-| GET | `/me` | Sí | cualquier usuario | falta |
+| POST | `/register` | No | — | existe |
+| GET | `/me` | Sí | cualquier usuario | existe |
 | GET | `/dashboard` | Sí | cualquier usuario | cambia (nombres de campos) |
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | GET | `/expenses` | Sí | cualquier usuario | cambia (período, tope y usuario) |
 | GET | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
-| POST | `/expenses` | Sí | cualquier usuario | cambia (errores) |
+| POST | `/expenses` | Sí | cualquier usuario | existe |
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | DELETE | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | GET | `/incomes` | Sí | cualquier usuario | falta |
-| POST | `/incomes` | Sí | cualquier usuario | cambia (errores y usuario) |
+| POST | `/incomes` | Sí | cualquier usuario | cambia (usuario) |
 | PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
 | DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
-| GET | `/users` | Sí | solo admin | cambia (errores) |
+| GET | `/users` | Sí | solo admin | existe |
 
 Más adelante se prevén endpoints de metas de ahorro y compras en cuotas. Se agregan acá cuando se definan.
 
@@ -262,7 +257,7 @@ curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TO
 { "errors": [ { "field": "base", "message": "No autorizado" } ] }
 ```
 
-### `GET /me` (falta)
+### `GET /me`
 
 Protegido. Devuelve el usuario del token. Sirve para que el front sepa quién está logueado y si es admin al recargar la página.
 
