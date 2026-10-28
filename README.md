@@ -38,6 +38,16 @@ bin/rails server
 
 La app queda en <http://localhost:3000>. En desarrollo, los mails que envía la app (por ejemplo el de felicitación al cumplir una meta de ahorro) se pueden ver en <http://localhost:3000/letter_opener>.
 
+**Variables de entorno:**
+
+| Variable | Para qué sirve | Valor por defecto |
+|----------|----------------|-------------------|
+| `FRONTEND_URL` | Origen, o lista de orígenes separados por comas, desde los que el front en React puede llamar a la API (CORS). Ejemplo: `https://app.ejemplo.com,http://localhost:5174`. Una barra final se ignora. | En desarrollo y test: `http://localhost:5173` (Vite). **En producción es obligatoria**: sin ella la app no arranca. |
+
+Si el front corre en otro puerto, levantá el servidor así: `FRONTEND_URL=http://localhost:5174 bin/rails server`.
+
+**Antes de desplegar:** en `config/deploy.yml` la variable `FRONTEND_URL` está comentada. Hay que descomentarla y poner la URL real del front; sin ella la app no arranca en producción.
+
 ## Back-office (panel de administración)
 
 - **URL de acceso:** <http://localhost:3000/admin/login>
