@@ -111,7 +111,7 @@ Respuesta `200`:
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidmVyIjowLCJleHAiOjE3OTI4NTE0Njh9.8MJB4OR7Qc_72t9ro1acP08WEcaWhkUY5JVgGijaYZI",
-  "expires_at": "2026-10-27T03:14:00-03:00",
+  "expires_at": "2026-10-27T06:14:00Z",
   "user": { "id": 1, "user": "admin", "email": null, "admin": true }
 }
 ```
@@ -144,7 +144,7 @@ Si sale bien, `201` (el token está abreviado en este ejemplo):
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "expires_at": "2026-10-27T03:14:00-03:00",
+  "expires_at": "2026-10-27T06:14:00Z",
   "user": { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
 }
 ```
