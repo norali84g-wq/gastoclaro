@@ -5,7 +5,7 @@ class Api::V1::IncomesController < Api::V1::BaseController
     if income.save
       render json: { id: income.id, amount: income.amount, date: income.date }, status: :created
     else
-      render json: { errors: income.errors.full_messages }, status: :unprocessable_entity
+      render_record_errors(income)
     end
   end
 

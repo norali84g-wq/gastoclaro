@@ -74,7 +74,7 @@ La API devuelve y recibe JSON. Todas las rutas cuelgan de `/api/v1` y, salvo el 
    Authorization: Bearer <TOKEN>
    ```
 
-Sin token, o con un token inválido o vencido, la API responde `401` con `{ "error": "No autorizado" }`.
+Sin token, o con un token inválido o vencido, la API responde `401` (ver [Formato de errores](#formato-de-errores)).
 
 El token es un [JWT](https://jwt.io) firmado por el servidor y **vence a las 24 horas**. Cuando vence, la API responde `401` y hay que iniciar sesión de nuevo. Con `DELETE /api/v1/logout` se cierra la sesión y el token deja de servir antes de tiempo.
 
@@ -85,7 +85,17 @@ Hay dos tipos de usuario:
 - **Usuario común:** ve solo sus propios ingresos y gastos, tanto en el dashboard como en los listados.
 - **Administrador** (`admin`): ve los datos de todos y puede usar los endpoints reservados para admins.
 
-Si un usuario común intenta usar algo reservado para admins, la API responde `403` con `{ "error": "Acceso denegado" }`.
+Si un usuario común intenta usar algo reservado para admins, la API responde `403` con el mensaje "Acceso denegado".
+
+### Formato de errores
+
+Todos los errores de la API (`401`, `403`, `404` y `422`) tienen el mismo formato: una lista `errors` donde cada elemento indica el `field` con el problema y un `message` en español. Si el error es general y no de un campo, `field` vale `"base"`.
+
+```json
+{ "errors": [ { "field": "amount", "message": "debe ser mayor a 0" } ] }
+```
+
+Los textos están en `config/locales/es.yml`.
 
 ### Resumen de endpoints
 
@@ -129,7 +139,7 @@ Respuesta `200`:
 Con credenciales incorrectas, `401`:
 
 ```json
-{ "error": "Usuario o contraseña incorrectos" }
+{ "errors": [ { "field": "base", "message": "Usuario o contraseña incorrectos" } ] }
 ```
 
 ### `POST /api/v1/register`
@@ -159,13 +169,13 @@ Si sale bien, `201` (el token está abreviado en este ejemplo):
 }
 ```
 
-Si hay datos inválidos, `422` con la lista de errores (por ahora los mensajes están en inglés):
+Si hay datos inválidos, `422` con la lista de errores:
 
 ```json
 {
   "errors": [
-    "User has already been taken",
-    "Email has already been taken"
+    { "field": "user", "message": "ya está en uso" },
+    { "field": "email", "message": "ya está en uso" }
   ]
 }
 ```
@@ -181,7 +191,7 @@ curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TO
 Respuesta `204`, sin cuerpo. Si se vuelve a usar el mismo token, la API responde `401`:
 
 ```json
-{ "error": "No autorizado" }
+{ "errors": [ { "field": "base", "message": "No autorizado" } ] }
 ```
 
 Para volver a entrar hay que hacer login de nuevo.
@@ -256,7 +266,7 @@ Respuesta `201`:
 Con datos inválidos (por ejemplo `amount: 0`), `422`:
 
 ```json
-{ "errors": ["Amount must be greater than 0"] }
+{ "errors": [ { "field": "amount", "message": "debe ser mayor a 0" } ] }
 ```
 
 ### `GET /api/v1/categories`
@@ -363,7 +373,7 @@ Respuesta `201`: el gasto `id: 2` que aparece en el listado de `GET /api/v1/expe
 Con datos inválidos (por ejemplo un `purchase_channel` que no existe), `422`:
 
 ```json
-{ "errors": ["Purchase channel no es válido"] }
+{ "errors": [ { "field": "purchase_channel", "message": "no es válido" } ] }
 ```
 
 Un `vendor_id` inexistente también devuelve `422`.
@@ -388,13 +398,12 @@ Respuesta `200`:
 Sin token, `401`. Con el token de un usuario común, `403`:
 
 ```json
-{ "error": "Acceso denegado" }
+{ "errors": [ { "field": "base", "message": "Acceso denegado" } ] }
 ```
 
 ### Notas sobre la API
 
-- Los mensajes de validación vienen del modelo y hoy mezclan español e inglés (por ejemplo `"Amount must be greater than 0"`).
-- Cuando el `purchase_channel` o el `vendor_id` son inválidos, la API responde solo ese error y no valida el resto de los campos en la misma respuesta.
+- Los mensajes de error están en español y salen de `config/locales/es.yml`.
 - Las categorías son globales; los gastos y el dashboard se limitan al usuario: cada uno ve solo lo suyo y el admin ve todo.
 
 ## Modelo de datos

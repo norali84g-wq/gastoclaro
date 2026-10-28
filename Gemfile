@@ -71,6 +71,8 @@ gem "json", "3.1.0"
 
 gem "jwt", "~> 3.3"
 
+gem "rails-i18n", "~> 8.1"
+
 gem "rack-cors", "~> 3.0"
 
 # image_processing 2.x no incluye ruby-vips; Active Storage lo necesita
