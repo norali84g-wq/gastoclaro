@@ -18,7 +18,6 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 
 | Pieza | Hoy en `main` | Cuando entre |
 |-------|---------------|--------------|
-| `422` con `field: "period"` si `?period` es inválido | no valida | sin PR todavía |
 | `422` si un ítem de gasto llega sin `name` (en `POST` y `PATCH`) | el ítem se descarta en silencio | PR aparte |
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
 | `400` si el JSON está mal formado | Rails responde con su propio formato | sin PR todavía |
@@ -100,7 +99,7 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/me` | Sí | cualquier usuario | existe |
 | GET | `/dashboard` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
-| GET | `/expenses` | Sí | cualquier usuario | cambia (período, tope y usuario) |
+| GET | `/expenses` | Sí | cualquier usuario | existe |
 | GET | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | POST | `/expenses` | Sí | cualquier usuario | existe |
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
@@ -346,7 +345,7 @@ Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve lo
 
 | Parámetro de consulta | Tipo | Obligatorio | Qué hace |
 |-----------------------|------|:-----------:|----------|
-| `period` | string `YYYY-MM` | No | trae solo los gastos de ese mes. Si el valor es inválido (por ejemplo `2026-13`), responde `422` con `field` `period` y el mensaje "no es válido" (`falta`: hoy no lo valida) |
+| `period` | string `YYYY-MM` | No | trae solo los gastos de ese mes. Si el valor es inválido (por ejemplo `2026-13`), responde `422` con `field` `period` y el mensaje "no es válido" |
 
 La respuesta tiene un tope de **100 gastos**, sin paginación. Si hay más, devuelve los 100 más recientes **sin avisar**: usá `?period` para acotar.
 

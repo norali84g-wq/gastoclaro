@@ -1,8 +1,19 @@
 class Api::V1::ExpensesController < Api::V1::BaseController
+  # Tope de gastos que devuelve el listado (ver api.md, GET /expenses).
+  MAX_INDEX_EXPENSES = 100
+  # Campo que se informa cuando ?period no tiene el formato YYYY-MM.
+  PERIOD_FIELD = "period".freeze
+  PERIOD_FORMAT = /\A\d{4}-(0[1-9]|1[0-2])\z/
+
   def index
-    expenses = visible_expenses
-                           .includes(:category, :expense_items)
-                           .order(date: :desc, id: :desc)
+    month = parse_period(params[:period])
+    if params[:period].present? && month.nil?
+      return render_error(api_t("invalid_period"), status: :unprocessable_entity, field: PERIOD_FIELD)
+    end
+
+    expenses = visible_expenses.includes(:category, :user, :expense_items)
+    expenses = expenses.where(date: month.all_month) if month
+    expenses = expenses.order(date: :desc, id: :desc).limit(MAX_INDEX_EXPENSES)
 
     render json: expenses.map { |expense| expense_json(expense) }
   end
@@ -34,6 +45,13 @@ class Api::V1::ExpensesController < Api::V1::BaseController
     (vendor_id.is_a?(String) || vendor_id.is_a?(Integer)) && Vendor.exists?(id: vendor_id)
   end
 
+  # Devuelve el primer día del mes, o nil si el valor no es un texto con formato YYYY-MM.
+  def parse_period(value)
+    return unless value.is_a?(String) && value.match?(PERIOD_FORMAT)
+
+    Date.strptime(value, "%Y-%m")
+  end
+
   def purchase_channel_invalido?
     params[:purchase_channel].present? && !Expense.purchase_channels.key?(params[:purchase_channel])
   end
@@ -57,7 +75,7 @@ class Api::V1::ExpensesController < Api::V1::BaseController
       description: expense.description,
       is_fixed: expense.is_fixed,
       purchase_channel: expense.purchase_channel,
-      user_id: expense.user_id,
+      user: { id: expense.user_id, user: expense.user.user },
       vendor_id: expense.vendor_id,
       category: { id: expense.category_id, name: expense.category.name },
       expense_items: expense.expense_items.map { |item|

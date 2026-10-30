@@ -31,6 +31,50 @@ class Api::V1::ExpensesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ "Leche" ], gastos.first["expense_items"].map { |i| i["name"] }
   end
 
+  test "index devuelve el usuario como objeto con id y nombre" do
+    Expense.create!(user: @user, category: @categoria, date: Date.today, amount: 10)
+
+    get "/api/v1/expenses", headers: @headers
+
+    assert_response :ok
+    gasto = response.parsed_body.first
+    assert_equal({ "id" => @user.id, "user" => "tester" }, gasto["user"])
+    assert_not gasto.key?("user_id")
+  end
+
+  test "index con period devuelve solo los gastos de ese mes" do
+    Expense.create!(user: @user, category: @categoria, date: "2026-09-30", amount: 10, description: "septiembre")
+    Expense.create!(user: @user, category: @categoria, date: "2026-10-01", amount: 10, description: "octubre")
+
+    get "/api/v1/expenses", params: { period: "2026-09" }, headers: @headers
+
+    assert_response :ok
+    assert_equal [ "septiembre" ], response.parsed_body.map { |g| g["description"] }
+  end
+
+  test "index con period invalido da 422 con field period" do
+    [ "2026-13", "2026-9", "septiembre", "2026-09-01" ].each do |periodo|
+      get "/api/v1/expenses", params: { period: periodo }, headers: @headers
+
+      assert_response :unprocessable_entity, "period #{periodo.inspect} deberia rechazarse"
+      assert_equal [ { "field" => "period", "message" => "no es válido" } ], response.parsed_body["errors"]
+    end
+  end
+
+  test "index devuelve como maximo el tope de gastos, los mas recientes" do
+    tope = Api::V1::ExpensesController::MAX_INDEX_EXPENSES
+    (tope + 1).times do |i|
+      Expense.create!(user: @user, category: @categoria, date: Date.new(2025, 1, 1) + i, amount: 10)
+    end
+
+    get "/api/v1/expenses", headers: @headers
+
+    assert_response :ok
+    fechas = response.parsed_body.map { |g| g["date"] }
+    assert_equal tope, fechas.size
+    assert_not_includes fechas, "2025-01-01"
+  end
+
   test "create sin token da 401" do
     assert_no_difference "Expense.count" do
       post "/api/v1/expenses", params: { amount: 10, date: "2026-09-29", category_id: @categoria.id }, as: :json
@@ -65,6 +109,14 @@ class Api::V1::ExpensesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :created
     assert_equal 500, BigDecimal(response.parsed_body["amount"])
+  end
+
+  test "create devuelve el usuario como objeto con id y nombre" do
+    post "/api/v1/expenses", params: { amount: 500, date: "2026-09-28", category_id: @categoria.id },
+                             headers: @headers, as: :json
+
+    assert_response :created
+    assert_equal({ "id" => @user.id, "user" => "tester" }, response.parsed_body["user"])
   end
 
   test "create ignora user_id y family_group_id enviados y usa el usuario logueado" do
