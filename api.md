@@ -22,7 +22,7 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
 | `400` si el JSON está mal formado | Rails responde con su propio formato | sin PR todavía |
 
-Además de lo marcado `cambia` o `falta` en el resumen de endpoints.
+Además, los endpoints de [Endpoints planificados](#endpoints-planificados) todavía no existen.
 
 ## Convenciones
 
@@ -99,17 +99,11 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/dashboard` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | GET | `/expenses` | Sí | cualquier usuario | existe |
-| GET | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
 | POST | `/expenses` | Sí | cualquier usuario | existe |
-| PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
-| DELETE | `/expenses/:id` | Sí | dueño del gasto o admin | falta |
-| GET | `/incomes` | Sí | cualquier usuario | falta |
-| POST | `/incomes` | Sí | cualquier usuario | cambia (usuario) |
-| PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
-| DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin | falta |
+| POST | `/incomes` | Sí | cualquier usuario | existe |
 | GET | `/users` | Sí | solo admin | existe |
 
-Más adelante se prevén endpoints de metas de ahorro y compras en cuotas. Se agregan acá cuando se definan.
+Esta tabla lista solo lo que existe hoy. Los endpoints que todavía no existen están en [Endpoints planificados](#endpoints-planificados). Más adelante se prevén endpoints de metas de ahorro y compras en cuotas; se agregan cuando se definan.
 
 ## Formas de las respuestas
 
@@ -166,7 +160,7 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 | `id` | integer | No | identificador |
 | `amount` | string decimal | No | monto |
 | `date` | string `YYYY-MM-DD` | No | fecha del ingreso |
-| `user` | objeto `{ id, user }` | No | a quién pertenece. Importa para el admin, que ve los de todos |
+| `user` | objeto `{ id, user }` | No | a quién pertenece. Importa para el admin, que ve los de todos. Hoy lo trae `incomes` dentro de `GET /dashboard`; la respuesta de `POST /incomes` todavía no |
 
 ---
 
@@ -374,16 +368,6 @@ curl "http://localhost:3000/api/v1/expenses?period=2026-09" -H "Authorization: B
 ]
 ```
 
-### `GET /expenses/:id` (falta)
-
-Protegido. Devuelve un gasto, con la forma **Gasto**.
-
-```bash
-curl http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
-```
-
-`200`: un solo objeto, igual a un elemento de la lista de arriba. `404` si no existe o no es del usuario.
-
 ### `POST /expenses`
 
 Protegido. El gasto queda a nombre del usuario del token.
@@ -471,59 +455,9 @@ curl -X POST http://localhost:3000/api/v1/expenses \
 
 Un `vendor_id` que no existe devuelve `422` con `field` `vendor_id` y el mensaje "no existe". Un `category_id` que no existe también devuelve `422`, con `field` `category_id` y el mensaje "debe existir". Si hay varios campos inválidos, la API los devuelve todos juntos en la misma respuesta.
 
-### `PATCH /expenses/:id` (falta)
-
-Protegido. Edita un gasto. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
-
-```bash
-curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"description":"Compra del sábado"}'
-```
-
-`200`: el gasto actualizado, con la forma **Gasto**. `404` si no existe o no es del usuario. `422` si hay datos inválidos.
-
-**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id` **y también su `name`**. Para borrarlo, se envía su `id` con `"_destroy": true` (el borrado no necesita `name`). Un ítem sin `id` se crea nuevo:
-
-```bash
-curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
-```
-
-**Atención 1:** un ítem con `id` que llega sin `name` da `422`, igual que en `POST`. El borrado (`_destroy`) no necesita `name`. Esta regla la implementa el PR de validación de ítems.
-
-`amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
-
-### `DELETE /expenses/:id` (falta)
-
-Protegido. Borra un gasto y sus ítems.
-
-```bash
-curl -X DELETE http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
-```
-
-`204`, sin cuerpo. `404` si no existe o no es del usuario.
-
 ---
 
 ## Ingresos
-
-### `GET /incomes` (falta)
-
-Protegido. Ingresos del usuario, del más reciente al más antiguo (el admin ve los de todos, por eso cada uno trae `user`).
-
-```bash
-curl http://localhost:3000/api/v1/incomes -H "Authorization: Bearer <TOKEN>"
-```
-
-`200` (lista de **Ingreso**):
-
-```json
-[
-  { "id": 1, "amount": "450000.0", "date": "2026-09-01", "user": { "id": 1, "user": "admin" } }
-]
-```
 
 ### `POST /incomes`
 
@@ -540,10 +474,10 @@ curl -X POST http://localhost:3000/api/v1/incomes \
   -d '{"amount":450000,"date":"2026-09-01"}'
 ```
 
-`201` (forma **Ingreso**):
+`201`. Hoy devuelve solo `id`, `amount` y `date`; el `user` de la forma **Ingreso** queda planificado junto con `GET /incomes`:
 
 ```json
-{ "id": 1, "amount": "450000.0", "date": "2026-09-01", "user": { "id": 1, "user": "admin" } }
+{ "id": 1, "amount": "450000.0", "date": "2026-09-01" }
 ```
 
 `422`:
@@ -551,34 +485,6 @@ curl -X POST http://localhost:3000/api/v1/incomes \
 ```json
 { "errors": [ { "field": "amount", "message": "debe ser mayor a 0" } ] }
 ```
-
-### `PATCH /incomes/:id` (falta)
-
-Protegido. Edita un ingreso (`amount`, `date`, opcionales). Solo se modifica lo que se envía.
-
-```bash
-curl -X PATCH http://localhost:3000/api/v1/incomes/<INCOME_ID> \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"amount":460000}'
-```
-
-`200`:
-
-```json
-{ "id": 1, "amount": "460000.0", "date": "2026-09-01", "user": { "id": 1, "user": "admin" } }
-```
-
-`404` si no existe o no es del usuario. `422` si hay datos inválidos, igual que en `POST`.
-
-### `DELETE /incomes/:id` (falta)
-
-Protegido. Borra un ingreso.
-
-```bash
-curl -X DELETE http://localhost:3000/api/v1/incomes/<INCOME_ID> -H "Authorization: Bearer <TOKEN>"
-```
-
-`204`, sin cuerpo. `404` si no existe o no es del usuario.
 
 ---
 
@@ -605,3 +511,106 @@ Con el token de un usuario común, `403`:
 ```json
 { "errors": [ { "field": "base", "message": "Acceso denegado" } ] }
 ```
+
+---
+
+## Endpoints planificados
+
+Estos endpoints **todavía no existen** en la API: si el front los llama, recibe `404`. El front del TP2 no usa ninguno. Quedan documentados con la forma acordada para cuando se implementen.
+
+| Método | Ruta | Protegido | Permiso |
+|--------|------|:---------:|---------|
+| GET | `/expenses/:id` | Sí | dueño del gasto o admin |
+| PATCH | `/expenses/:id` | Sí | dueño del gasto o admin |
+| DELETE | `/expenses/:id` | Sí | dueño del gasto o admin |
+| GET | `/incomes` | Sí | cualquier usuario |
+| PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin |
+| DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin |
+
+### `GET /expenses/:id` (planificado)
+
+Protegido. Devuelve un gasto, con la forma **Gasto**.
+
+```bash
+curl http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`200`: un solo objeto, igual a un elemento de la lista de `GET /expenses`. `404` si no existe o no es del usuario.
+
+### `PATCH /expenses/:id` (planificado)
+
+Protegido. Edita un gasto. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"description":"Compra del sábado"}'
+```
+
+`200`: el gasto actualizado, con la forma **Gasto**. `404` si no existe o no es del usuario. `422` si hay datos inválidos.
+
+**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id` **y también su `name`**. Para borrarlo, se envía su `id` con `"_destroy": true` (el borrado no necesita `name`). Un ítem sin `id` se crea nuevo:
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
+```
+
+**Atención 1:** un ítem con `id` que llega sin `name` da `422`, igual que en `POST`. El borrado (`_destroy`) no necesita `name`. Esta regla la implementa el PR de validación de ítems.
+
+`amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
+
+### `DELETE /expenses/:id` (planificado)
+
+Protegido. Borra un gasto y sus ítems.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `404` si no existe o no es del usuario.
+
+### `GET /incomes` (planificado)
+
+Protegido. Ingresos del usuario, del más reciente al más antiguo (el admin ve los de todos, por eso cada uno trae `user`).
+
+```bash
+curl http://localhost:3000/api/v1/incomes -H "Authorization: Bearer <TOKEN>"
+```
+
+`200` (lista de **Ingreso**):
+
+```json
+[
+  { "id": 1, "amount": "450000.0", "date": "2026-09-01", "user": { "id": 1, "user": "admin" } }
+]
+```
+
+### `PATCH /incomes/:id` (planificado)
+
+Protegido. Edita un ingreso (`amount`, `date`, opcionales). Solo se modifica lo que se envía.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/incomes/<INCOME_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"amount":460000}'
+```
+
+`200`:
+
+```json
+{ "id": 1, "amount": "460000.0", "date": "2026-09-01", "user": { "id": 1, "user": "admin" } }
+```
+
+`404` si no existe o no es del usuario. `422` si hay datos inválidos, igual que en `POST`.
+
+### `DELETE /incomes/:id` (planificado)
+
+Protegido. Borra un ingreso.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/incomes/<INCOME_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `404` si no existe o no es del usuario.
