@@ -4,14 +4,25 @@ GastoClaro es una aplicación web de gestión de gastos personales hecha con Rub
 
 **Stack:** Ruby 3.4.10, Rails 8.1, SQLite, Puma, Hotwire (Turbo + Stimulus) e importmap.
 
+## Sobre el proyecto
+
+- **Trabajo:** TP2 de Programación IV (Tecnicatura Universitaria en Programación). Integra este back-end con un front-end propio.
+- **Temática:** gestión de gastos personales (ver la descripción de arriba).
+- **Integrantes:** Norali Gorosito y Nico Ventureira.
+- **Modalidad:** grupal.
+- **Autoría del back-end original:** Norali Gorosito (TP1 individual, que se evolucionó en este TP2).
+- **Front-end:** React, en el repositorio [gastoClaro-front](https://github.com/ventureiranm/gastoClaro-front). Su instalación, versiones, variables de entorno y comandos (pruebas y compilación) están en el README de ese repositorio.
+- **Contrato de la API:** [`api.md`](api.md).
+
 ## Índice
 
 1. [Requisitos e instalación](#requisitos-e-instalación)
-2. [Back-office (panel de administración)](#back-office-panel-de-administración)
-3. [API v1](#api-v1)
-4. [Modelo de datos](#modelo-de-datos)
-5. [Calidad y tests](#calidad-y-tests)
-6. [Evolución futura](#evolución-futura)
+2. [Datos de prueba y credenciales de demostración](#datos-de-prueba-y-credenciales-de-demostración)
+3. [Back-office (panel de administración)](#back-office-panel-de-administración)
+4. [API v1](#api-v1)
+5. [Modelo de datos](#modelo-de-datos)
+6. [Calidad y tests](#calidad-y-tests)
+7. [Evolución futura](#evolución-futura)
 
 ## Requisitos e instalación
 
@@ -48,6 +59,19 @@ Si el front corre en otro puerto, levantá el servidor así: `FRONTEND_URL=http:
 
 **Antes de desplegar:** en `config/deploy.yml` la variable `FRONTEND_URL` está comentada. Hay que descomentarla y poner la URL real del front; sin ella la app no arranca en producción.
 
+## Datos de prueba y credenciales de demostración
+
+`bin/rails db:setup` (o `bin/rails db:seed` si la base ya existe) carga los datos de `db/seeds.rb`. Se puede correr más de una vez sin duplicar nada.
+
+| Usuario | Contraseña | Qué es |
+|---------|------------|--------|
+| `admin` | `admin1234` | Administrador. Entra al back-office y a la API. No tiene email. |
+| `demo` | `demo1234` | Usuario común de demostración (`demo@example.com`), con 2 ingresos y 3 gastos para que el panel muestre datos. **Solo se crea fuera de producción.** |
+
+El seed también crea las dos categorías de ejemplo del contrato de la API (Supermercado y Limpieza).
+
+> **Solo para desarrollo.** Estas credenciales están en el repositorio y no son de cuentas reales. No las uses en un entorno real: cambiá las contraseñas o eliminá los usuarios antes de publicar.
+
 ## Back-office (panel de administración)
 
 - **URL de acceso:** <http://localhost:3000/admin/login>
@@ -63,348 +87,17 @@ Solo pueden ingresar los usuarios con el flag `admin`. Una vez dentro, el back-o
 
 ## API v1
 
-La API devuelve y recibe JSON. Todas las rutas cuelgan de `/api/v1` y, salvo el login, requieren un token.
+La API devuelve y recibe JSON y todas sus rutas cuelgan de `/api/v1`. **El contrato completo está en [`api.md`](api.md)**: rutas, campos, validaciones, permisos, errores y ejemplos reproducibles. Esa es la única fuente de la documentación de la API; este README no la repite para que no queden dos versiones distintas.
 
-### Autenticación
+Lo básico para empezar:
 
-1. Hacé `POST /api/v1/login` con `user` y `password`. La respuesta trae el `token`, cuándo vence (`expires_at`) y los datos del usuario.
-2. En cada request siguiente enviá el token en el header `Authorization`:
+1. `POST /api/v1/login` con `user` y `password` devuelve un `token` (JWT) y cuándo vence (`expires_at`).
+2. En cada pedido protegido se envía `Authorization: Bearer <TOKEN>`. El token vence a las 24 horas, y `DELETE /api/v1/logout` lo invalida antes.
+3. Un usuario común ve solo sus datos. El administrador ve los de todos.
+4. Los errores (`400`, `401`, `403`, `404` y `422`) tienen todos la misma forma: `{ "errors": [ { "field": "...", "message": "..." } ] }`. Los textos están en `config/locales/es.yml`.
+5. En `api.md` cada endpoint indica su estado (`existe`, `cambia` o `falta`).
 
-   ```
-   Authorization: Bearer <TOKEN>
-   ```
-
-Sin token, o con un token inválido o vencido, la API responde `401` (ver [Formato de errores](#formato-de-errores)).
-
-El token es un [JWT](https://jwt.io) firmado por el servidor y **vence a las 24 horas**. Cuando vence, la API responde `401` y hay que iniciar sesión de nuevo. Con `DELETE /api/v1/logout` se cierra la sesión y el token deja de servir antes de tiempo.
-
-### Permisos
-
-Hay dos tipos de usuario:
-
-- **Usuario común:** ve solo sus propios ingresos y gastos, tanto en el dashboard como en los listados.
-- **Administrador** (`admin`): ve los datos de todos y puede usar los endpoints reservados para admins.
-
-Si un usuario común intenta usar algo reservado para admins, la API responde `403` con el mensaje "Acceso denegado".
-
-### Formato de errores
-
-Todos los errores de la API (`401`, `403`, `404` y `422`) tienen el mismo formato: una lista `errors` donde cada elemento indica el `field` con el problema y un `message` en español. Si el error es general y no de un campo, `field` vale `"base"`.
-
-```json
-{ "errors": [ { "field": "amount", "message": "debe ser mayor a 0" } ] }
-```
-
-Los textos están en `config/locales/es.yml`.
-
-### Resumen de endpoints
-
-| Método | Ruta | Requiere token | Descripción |
-|--------|------|:--------------:|-------------|
-| `POST` | `/api/v1/login` | No | Devuelve el token del usuario |
-| `DELETE` | `/api/v1/logout` | Sí | Cierra la sesión e invalida el token |
-| `POST` | `/api/v1/register` | No | Crea una cuenta nueva y devuelve su token |
-| `GET`  | `/api/v1/me` | Sí | Devuelve el usuario del token |
-| `GET`  | `/api/v1/dashboard` | Sí | Resumen del mes actual y ahorro de los últimos 6 meses |
-| `POST` | `/api/v1/incomes` | Sí | Registra un ingreso |
-| `GET`  | `/api/v1/categories` | Sí | Lista las categorías |
-| `GET`  | `/api/v1/expenses` | Sí | Lista tus gastos (el admin ve los de todos) |
-| `POST` | `/api/v1/expenses` | Sí | Registra un gasto |
-| `GET`  | `/api/v1/users` | Sí (solo admin) | Lista los usuarios |
-
-Los ejemplos de abajo son respuestas reales, capturadas contra una instancia local con datos de prueba. El token que aparece es el de esa instancia descartable. En los ejemplos con `curl`, `<TOKEN>` es el valor que devolvió el login.
-
-> **Formato de números:** los montos (`amount`, `unit_price`, `subtotal`, `income`, etc.) se devuelven como **strings** decimales (por ejemplo `"450000.0"`), no como números JSON.
-
-### `POST /api/v1/login`
-
-Parámetros: `user`, `password`.
-
-```bash
-curl -X POST http://localhost:3000/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{"user":"admin","password":"admin1234"}'
-```
-
-Respuesta `200`:
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidmVyIjowLCJleHAiOjE3OTI4NTE0Njh9.8MJB4OR7Qc_72t9ro1acP08WEcaWhkUY5JVgGijaYZI",
-  "expires_at": "2026-10-27T06:14:00Z",
-  "user": { "id": 1, "user": "admin", "email": null, "admin": true }
-}
-```
-
-Con credenciales incorrectas, `401`:
-
-```json
-{ "errors": [ { "field": "base", "message": "Usuario o contraseña incorrectos" } ] }
-```
-
-### `POST /api/v1/register`
-
-Crea una cuenta nueva. No hace falta iniciar sesión ni enviar token, porque todavía no hay cuenta. Quien se registra por acá es un usuario común y ve solo sus propios datos. El rol de administrador no se puede pedir desde la API: si el pedido trae `admin` o `family_group_id`, se ignoran.
-
-Parámetros:
-
-- `user`: obligatorio, no puede repetirse.
-- `email`: obligatorio, con formato válido y único (no distingue mayúsculas de minúsculas).
-- `password`: obligatorio, mínimo 8 caracteres.
-- `password_confirmation`: obligatorio, tiene que ser igual a `password`.
-
-```bash
-curl -X POST http://localhost:3000/api/v1/register \
-  -H "Content-Type: application/json" \
-  -d '{"user":"prueba1","email":"prueba1@example.com","password":"clave1234","password_confirmation":"clave1234"}'
-```
-
-Si sale bien, `201` (el token está abreviado en este ejemplo):
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "expires_at": "2026-10-27T06:14:00Z",
-  "user": { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
-}
-```
-
-Si hay datos inválidos, `422` con la lista de errores:
-
-```json
-{
-  "errors": [
-    { "field": "user", "message": "ya está en uso" },
-    { "field": "email", "message": "ya está en uso" }
-  ]
-}
-```
-
-### `DELETE /api/v1/logout`
-
-Cierra la sesión. El token usado en el pedido deja de servir, y también cualquier otro token emitido antes para ese usuario. Requiere token.
-
-```bash
-curl -X DELETE http://localhost:3000/api/v1/logout -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `204`, sin cuerpo. Si se vuelve a usar el mismo token, la API responde `401`:
-
-```json
-{ "errors": [ { "field": "base", "message": "No autorizado" } ] }
-```
-
-Para volver a entrar hay que hacer login de nuevo.
-
-### `GET /api/v1/me`
-
-Devuelve el usuario del token. Sirve para saber quién está logueado y si es administrador, por ejemplo al recargar la página. Tiene la misma forma que el `user` que devuelven el login y el registro. Requiere token.
-
-```bash
-curl http://localhost:3000/api/v1/me -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `200`:
-
-```json
-{ "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
-```
-
-Sin token, o con un token inválido o vencido, `401`. El campo `admin` sirve solo para decidir qué mostrar; los permisos los controla siempre la API.
-
-### `GET /api/v1/dashboard`
-
-Devuelve el resumen del **mes en curso** del usuario (si es admin, el de todos): ingresos, consumo, ahorro, consumo por categoría y la evolución de los últimos 6 meses con el ahorro acumulado. `savings_goal_percentage` es el porcentaje de ahorro definido para el grupo familiar del usuario.
-
-```bash
-curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `200`:
-
-```json
-{
-  "period": "2026-09",
-  "income": "450000.0",
-  "consumption": "38101.0",
-  "savings": "411899.0",
-  "savings_goal_percentage": 10,
-  "incomes": [
-    { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
-  ],
-  "consumption_by_category": [
-    { "category": "Servicios", "total": "25000.0" },
-    { "category": "Supermercado", "total": "13101.0" }
-  ],
-  "monthly_savings": [
-    { "month": "2026-04", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
-    { "month": "2026-05", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
-    { "month": "2026-06", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
-    { "month": "2026-07", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
-    { "month": "2026-08", "income": "0.0", "consumption": "0.0", "savings": "0.0", "accumulated": "0.0" },
-    { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" }
-  ]
-}
-```
-
-### `POST /api/v1/incomes`
-
-Parámetros: `amount` (mayor a 0) y `date`. El ingreso queda siempre a nombre del usuario autenticado; cualquier `user_id` que se envíe se ignora.
-
-```bash
-curl -X POST http://localhost:3000/api/v1/incomes \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"amount":450000,"date":"2026-09-01"}'
-```
-
-Respuesta `201`:
-
-```json
-{ "id": 1, "amount": "450000.0", "date": "2026-09-01" }
-```
-
-Con datos inválidos (por ejemplo `amount: 0`), `422`:
-
-```json
-{ "errors": [ { "field": "amount", "message": "debe ser mayor a 0" } ] }
-```
-
-### `GET /api/v1/categories`
-
-Lista todas las categorías ordenadas por nombre. Las categorías son globales, no dependen del grupo familiar.
-
-```bash
-curl http://localhost:3000/api/v1/categories -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `200`:
-
-```json
-[
-  { "id": 3, "name": "Servicios",    "parent_id": null, "tracks_installments": null },
-  { "id": 1, "name": "Supermercado", "parent_id": null, "tracks_installments": null },
-  { "id": 2, "name": "Transporte",   "parent_id": null, "tracks_installments": null }
-]
-```
-
-### `GET /api/v1/expenses`
-
-Lista los gastos del usuario, del más reciente al más antiguo, con su categoría e ítems. Si el usuario es admin, lista los de todos.
-
-```bash
-curl http://localhost:3000/api/v1/expenses -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `200`:
-
-```json
-[
-  {
-    "id": 2,
-    "amount": "13101.0",
-    "date": "2026-09-12",
-    "description": "Compra semanal",
-    "is_fixed": false,
-    "purchase_channel": "presencial",
-    "user_id": 1,
-    "vendor_id": 1,
-    "category": { "id": 1, "name": "Supermercado" },
-    "expense_items": [
-      { "id": 1, "name": "Leche", "quantity": 2, "unit": "unidad", "unit_price": "1800.5", "subtotal": "3601.0" },
-      { "id": 2, "name": "Carne", "quantity": 1, "unit": "kg", "unit_price": "9500.0", "subtotal": "9500.0" }
-    ]
-  },
-  {
-    "id": 1,
-    "amount": "25000.0",
-    "date": "2026-09-05",
-    "description": "Luz",
-    "is_fixed": true,
-    "purchase_channel": "presencial",
-    "user_id": 1,
-    "vendor_id": null,
-    "category": { "id": 3, "name": "Servicios" },
-    "expense_items": []
-  }
-]
-```
-
-### `POST /api/v1/expenses`
-
-Parámetros: `date` y `category_id` son obligatorios, y `amount` es obligatorio si no se envían ítems. Opcionales: `description`, `vendor_id`, `is_fixed`, `purchase_channel` (`presencial`, `delivery` o `retiro`; por defecto `presencial`) y `expense_items_attributes` (lista de ítems con `name`, `quantity`, `unit` y `unit_price`). La unidad (`unit`) puede ser `unidad`, `kg` o `g`. El gasto queda a nombre del usuario autenticado y de su grupo familiar.
-
-**Si se envían ítems, el monto del gasto se calcula como la suma de `quantity × unit_price`** y reemplaza al `amount` enviado.
-
-Gasto simple:
-
-```bash
-curl -X POST http://localhost:3000/api/v1/expenses \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"amount":25000,"date":"2026-09-05","category_id":3,"description":"Luz","is_fixed":true}'
-```
-
-Respuesta `201`:
-
-```json
-{
-  "id": 1,
-  "amount": "25000.0",
-  "date": "2026-09-05",
-  "description": "Luz",
-  "is_fixed": true,
-  "purchase_channel": "presencial",
-  "user_id": 1,
-  "vendor_id": null,
-  "category": { "id": 3, "name": "Servicios" },
-  "expense_items": []
-}
-```
-
-Gasto con ítems y comercio (sin `amount`, se calcula solo):
-
-```bash
-curl -X POST http://localhost:3000/api/v1/expenses \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"date":"2026-09-12","category_id":1,"vendor_id":1,"description":"Compra semanal","purchase_channel":"presencial","expense_items_attributes":[{"name":"Leche","quantity":2,"unit":"unidad","unit_price":1800.5},{"name":"Carne","quantity":1,"unit":"kg","unit_price":9500}]}'
-```
-
-Respuesta `201`: el gasto `id: 2` que aparece en el listado de `GET /api/v1/expenses`, con `amount: "13101.0"`.
-
-Con datos inválidos (por ejemplo un `purchase_channel` que no existe), `422`:
-
-```json
-{ "errors": [ { "field": "purchase_channel", "message": "no es válido" } ] }
-```
-
-Un `vendor_id` inexistente también devuelve `422`.
-
-### `GET /api/v1/users`
-
-Lista los usuarios. **Solo para administradores.** No devuelve contraseñas ni tokens.
-
-```bash
-curl http://localhost:3000/api/v1/users -H "Authorization: Bearer <TOKEN>"
-```
-
-Respuesta `200`:
-
-```json
-[
-  { "id": 1, "user": "admin", "email": null, "admin": true },
-  { "id": 5, "user": "prueba1", "email": "prueba1@example.com", "admin": false }
-]
-```
-
-Sin token, `401`. Con el token de un usuario común, `403`:
-
-```json
-{ "errors": [ { "field": "base", "message": "Acceso denegado" } ] }
-```
-
-### Notas sobre la API
-
-- Los mensajes de error están en español y salen de `config/locales/es.yml`.
-- Las categorías son globales; los gastos y el dashboard se limitan al usuario: cada uno ve solo lo suyo y el admin ve todo.
+Con la base cargada con `db:seed`, se puede probar entrando con `demo` / `demo1234` (ver [Datos de prueba](#datos-de-prueba-y-credenciales-de-demostración)).
 
 ## Modelo de datos
 
@@ -440,32 +133,22 @@ FinancialTip, ReferenceIndex: tablas independientes, sin relaciones.
 
 ## Calidad y tests
 
-Para correr la suite completa:
+Comandos, desde la raíz del proyecto:
 
 ```bash
-bin/rails test
+bin/rails test      # pruebas automatizadas
+bin/rubocop         # estilo del código
+bin/brakeman        # análisis de seguridad
 ```
 
-Estado verificado al 2026-09-30: **65 tests, 250 assertions, 0 fallas, 0 errores, 0 omitidos.**
+Estado verificado al 2026-10-31: **120 tests, 365 assertions, 0 fallas, 0 errores, 0 omitidos.** Cubren los endpoints de la API v1, los modelos, parte del back-office y los mailers.
 
-| Área | Tests | Qué cubre |
-|------|------:|-----------|
-| API v1 | 29 | Login (3), dashboard (6), ingresos (5), categorías (5) y gastos (10). Incluye autenticación por token (401 sin token), validaciones (422), aislamiento entre grupos familiares y que la API ignore el `user_id` enviado |
-| Modelos | 23 | `SavingsGoal` (8), `InstallmentPurchase` (7), `Expense` (7) y `User` (1) |
-| Back-office | 11 | Categorías (6) y metas de ahorro (5) |
-| Mailers | 2 | Mail de felicitación al cumplir una meta de ahorro |
-
-Análisis estático:
-
-```bash
-bin/rubocop      # estilo
-bin/brakeman     # seguridad
-```
-
-- **Rubocop:** 91 archivos inspeccionados, **0 ofensas**.
-- **Brakeman:** **0 warnings**. Hay 2 advertencias ignoradas a propósito, ambas falsos positivos de mass assignment en `Admin::UsersController`, documentados en `config/brakeman.ignore`. Esa pantalla solo es accesible para administradores logueados y existe justamente para que un admin cree usuarios y los marque como administradores.
+- **Rubocop:** 107 archivos inspeccionados, **0 ofensas**.
+- **Brakeman:** **0 advertencias activas**. Hay 2 advertencias ignoradas a propósito, ambas falsos positivos de mass assignment en `Admin::UsersController`, justificados y documentados en `config/brakeman.ignore`. Esa pantalla solo es accesible para administradores logueados y existe justamente para que un admin cree usuarios y los marque como administradores.
 
 **Lo que hoy no está cubierto por tests:** las pantallas del back-office de gastos, ingresos, usuarios, comercios, compras en cuotas, lista de compras, ahorro y estadísticas, y no hay tests de sistema (navegador).
+
+Los comandos de pruebas y de compilación del front-end están en el README de su repositorio.
 
 ## Evolución futura
 
