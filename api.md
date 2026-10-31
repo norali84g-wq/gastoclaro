@@ -310,7 +310,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 | `income`, `consumption`, `savings` | totales del mes. `savings = income - consumption`; puede ser negativo si se gastó más de lo que se ganó |
 | `savings_goal_percentage` | entero de 0 a 100, nunca `null`. Para un usuario recién registrado vale `0` |
 | `incomes` | los ingresos del mes, del más antiguo al más reciente. Cada uno trae `id`, `user` (objeto `{ "id", "user" }`, igual que en el resto de la API), `amount` y `date` |
-| `consumption_by_category` | el consumo del mes agrupado por nombre de categoría |
+| `consumption_by_category` | el consumo del mes agrupado por nombre de categoría. **No tiene un orden garantizado**: el front lo ordena como necesite |
 | `monthly_savings` | los últimos 6 meses, del más antiguo al más reciente |
 | `monthly_savings[].accumulated` | ahorro acumulado: la suma corrida de `savings` dentro de esos 6 meses. El primer mes de la lista parte de 0, así que **no** es el ahorro de toda la vida |
 
@@ -345,7 +345,7 @@ Protegido. Gastos del usuario, del más reciente al más antiguo (el admin ve lo
 
 | Parámetro de consulta | Tipo | Obligatorio | Qué hace |
 |-----------------------|------|:-----------:|----------|
-| `period` | string `YYYY-MM` | No | trae solo los gastos de ese mes. Si el valor es inválido (por ejemplo `2026-13`), responde `422` con `field` `period` y el mensaje "no es válido" |
+| `period` | string `YYYY-MM` | No | trae solo los gastos de ese mes. Si viene vacío (`?period=`) se ignora, igual que si no se envía. Si el valor es inválido (por ejemplo `2026-13`), responde `422` con `field` `period` y el mensaje "no es válido" |
 
 La respuesta tiene un tope de **100 gastos**, sin paginación. Si hay más, devuelve los 100 más recientes **sin avisar**: usá `?period` para acotar.
 
