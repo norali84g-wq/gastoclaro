@@ -21,7 +21,6 @@ Esto describe el contrato final. Estas piezas todavía no están en `main`; hast
 | `422` si un ítem de gasto llega sin `name` (en `POST` y `PATCH`) | el ítem se descarta en silencio | PR aparte |
 | `422` si `quantity` de un ítem no es entero | se recorta sin error (`1.5` → `1`, `0.5` → `0`) | mismo PR de validación de ítems |
 | `400` si el JSON está mal formado | Rails responde con su propio formato | sin PR todavía |
-| Categorías de ejemplo en `db/seeds.rb` (Supermercado y Limpieza) | el seed no crea categorías | PR aparte |
 
 Además de lo marcado `cambia` o `falta` en el resumen de endpoints.
 
@@ -56,7 +55,7 @@ Los ejemplos usan marcadores entre `<>` que hay que reemplazar. Los `id` que apa
 | `<CATEGORY_ID>` | un `id` de `GET /categories` (en el JSON va como número, sin comillas) |
 | `<EXPENSE_ID>` / `<INCOME_ID>` | el `id` que devolvió el `POST` correspondiente |
 
-Con una base nueva (`bin/rails db:setup`) existe el usuario `admin` (ver `db/seeds.rb`), pero **no hay categorías** y `GET /categories` devuelve `[]`. Hasta que el seed las cree, se cargan desde el panel web `/admin/categories` (con el usuario admin) o con `bin/rails console`. La API no tiene endpoint para crear categorías. Cuando el seed las incluya (va a crear dos: Supermercado y Limpieza), alcanza con `bin/rails db:seed`.
+Con una base nueva (`bin/rails db:setup`), el seed (`db/seeds.rb`) crea el usuario `admin`, las dos categorías de ejemplo (Supermercado y Limpieza) y, fuera de producción, un usuario de demostración (`demo`) con ingresos y gastos. Las credenciales están en el README. Si la base ya existe, alcanza con `bin/rails db:seed`: se puede correr más de una vez sin duplicar datos. La API no tiene endpoint para crear categorías: las nuevas se cargan desde el panel web `/admin/categories` (con el usuario admin) o con `bin/rails console`.
 
 ## Formato de errores
 
@@ -320,7 +319,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 
 ### `GET /categories`
 
-Protegido. Lista todas las categorías (globales), ordenadas por nombre. Con una base nueva devuelve `[]` hasta que se carguen (ver "Cómo reproducir los ejemplos").
+Protegido. Lista todas las categorías (globales), ordenadas por nombre. Después de correr el seed devuelve las dos categorías de ejemplo; en una base sin seed devuelve `[]` (ver "Cómo reproducir los ejemplos").
 
 ```bash
 curl http://localhost:3000/api/v1/categories -H "Authorization: Bearer <TOKEN>"
