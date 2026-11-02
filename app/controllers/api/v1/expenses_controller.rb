@@ -4,6 +4,11 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   # Campo que se informa cuando ?period no tiene el formato YYYY-MM.
   PERIOD_FIELD = "period".freeze
   PERIOD_FORMAT = /\A\d{4}-(0[1-9]|1[0-2])\z/
+  # Campos de un ítem. Al editar, además se acepta el id del ítem existente y _destroy para borrarlo.
+  ITEM_FIELDS = %i[name quantity unit unit_price].freeze
+  ITEM_EDIT_FIELDS = %i[id _destroy].freeze
+
+  before_action :set_expense, only: %i[update destroy]
 
   def index
     month = parse_period(params[:period])
@@ -33,7 +38,33 @@ class Api::V1::ExpensesController < Api::V1::BaseController
     end
   end
 
+  def update
+    @expense.assign_attributes(expense_params)
+
+    # Misma validación conjunta que en create: se devuelven todos los errores juntos.
+    @expense.validate
+    @expense.errors.add(:vendor_id, :not_found) unless vendor_valido?
+    @expense.errors.add(:purchase_channel, :invalid) if purchase_channel_invalido?
+
+    if @expense.errors.empty? && @expense.save
+      render json: expense_json(@expense.reload)
+    else
+      render_record_errors(@expense)
+    end
+  end
+
+  def destroy
+    @expense.destroy!
+    head :no_content
+  end
+
   private
+
+  # Solo se puede tocar un gasto visible para el usuario: el propio, o cualquiera si es admin.
+  # Si no existe o es de otro usuario, find lanza RecordNotFound y la API responde 404.
+  def set_expense
+    @expense = visible_expenses.find(params[:id])
+  end
 
   # vendor_id tiene que ser un valor simple (número o texto) y existir. Se busca con
   # `id:` para que nunca se interprete como SQL: `Vendor.exists?(valor)` trata un
@@ -61,10 +92,14 @@ class Api::V1::ExpensesController < Api::V1::BaseController
   def expense_params
     permitted = params.permit(
       :amount, :date, :description, :category_id, :vendor_id, :is_fixed, :purchase_channel,
-      expense_items_attributes: [ :name, :quantity, :unit, :unit_price ]
+      expense_items_attributes: item_fields
     )
     permitted.delete(:purchase_channel) unless Expense.purchase_channels.key?(permitted[:purchase_channel])
     permitted
+  end
+
+  def item_fields
+    action_name == "update" ? ITEM_FIELDS + ITEM_EDIT_FIELDS : ITEM_FIELDS
   end
 
   def expense_json(expense)

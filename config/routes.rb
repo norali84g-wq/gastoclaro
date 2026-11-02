@@ -35,6 +35,8 @@ Rails.application.routes.draw do
       get "categories", to: "categories#index"
       get "expenses", to: "expenses#index"
       post "expenses", to: "expenses#create"
+      patch "expenses/:id", to: "expenses#update"
+      delete "expenses/:id", to: "expenses#destroy"
       get "me", to: "current_user#show"
       get "users", to: "users#index"
     end
