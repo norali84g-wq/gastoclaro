@@ -100,6 +100,8 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | GET | `/expenses` | Sí | cualquier usuario | existe |
 | POST | `/expenses` | Sí | cualquier usuario | existe |
+| PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | existe |
+| DELETE | `/expenses/:id` | Sí | dueño del gasto o admin | existe |
 | POST | `/incomes` | Sí | cualquier usuario | existe |
 | GET | `/users` | Sí | solo admin | existe |
 
@@ -455,6 +457,40 @@ curl -X POST http://localhost:3000/api/v1/expenses \
 
 Un `vendor_id` que no existe devuelve `422` con `field` `vendor_id` y el mensaje "no existe". Un `category_id` que no existe también devuelve `422`, con `field` `category_id` y el mensaje "debe existir". Si hay varios campos inválidos, la API los devuelve todos juntos en la misma respuesta.
 
+### `PATCH /expenses/:id`
+
+Protegido. Edita un gasto. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"description":"Compra del sábado"}'
+```
+
+`200`: el gasto actualizado, con la forma **Gasto**. `404` si no existe o no es del usuario. `422` si hay datos inválidos. El `user` del gasto no cambia nunca: un `user_id` enviado se ignora.
+
+**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id` **y también su `name`**. Para borrarlo, se envía su `id` con `"_destroy": true` (el borrado no necesita `name`). Un ítem sin `id` se crea nuevo. Si el `id` de un ítem no pertenece a ese gasto, la API responde `404`:
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
+```
+
+**Atención 1:** un ítem con `id` que llega sin `name` tiene que dar `422`, igual que en `POST`. El borrado (`_destroy`) no necesita `name`. Hoy ese ítem se descarta en silencio, sin error (ver «Qué falta todavía en `main`»: lo resuelve el PR de validación de ítems).
+
+`amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
+
+### `DELETE /expenses/:id`
+
+Protegido. Borra un gasto y sus ítems.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `404` si no existe o no es del usuario.
+
 ---
 
 ## Ingresos
@@ -521,8 +557,6 @@ Estos endpoints **todavía no existen** en la API: si el front los llama, recibe
 | Método | Ruta | Protegido | Permiso |
 |--------|------|:---------:|---------|
 | GET | `/expenses/:id` | Sí | dueño del gasto o admin |
-| PATCH | `/expenses/:id` | Sí | dueño del gasto o admin |
-| DELETE | `/expenses/:id` | Sí | dueño del gasto o admin |
 | GET | `/incomes` | Sí | cualquier usuario |
 | PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin |
 | DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin |
@@ -536,40 +570,6 @@ curl http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Beare
 ```
 
 `200`: un solo objeto, igual a un elemento de la lista de `GET /expenses`. `404` si no existe o no es del usuario.
-
-### `PATCH /expenses/:id` (planificado)
-
-Protegido. Edita un gasto. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
-
-```bash
-curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"description":"Compra del sábado"}'
-```
-
-`200`: el gasto actualizado, con la forma **Gasto**. `404` si no existe o no es del usuario. `422` si hay datos inválidos.
-
-**Editar o borrar ítems.** Para modificar un ítem que ya existe, se envía su `id` **y también su `name`**. Para borrarlo, se envía su `id` con `"_destroy": true` (el borrado no necesita `name`). Un ítem sin `id` se crea nuevo:
-
-```bash
-curl -X PATCH http://localhost:3000/api/v1/expenses/<EXPENSE_ID> \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"expense_items_attributes":[{"id":1,"name":"Leche","quantity":3},{"id":2,"_destroy":true}]}'
-```
-
-**Atención 1:** un ítem con `id` que llega sin `name` da `422`, igual que en `POST`. El borrado (`_destroy`) no necesita `name`. Esta regla la implementa el PR de validación de ítems.
-
-`amount` se recalcula con los ítems que quedan. **Atención 2:** si se borran todos los ítems, el gasto conserva el `amount` anterior; para fijar otro monto, enviá también `amount` en el mismo pedido.
-
-### `DELETE /expenses/:id` (planificado)
-
-Protegido. Borra un gasto y sus ítems.
-
-```bash
-curl -X DELETE http://localhost:3000/api/v1/expenses/<EXPENSE_ID> -H "Authorization: Bearer <TOKEN>"
-```
-
-`204`, sin cuerpo. `404` si no existe o no es del usuario.
 
 ### `GET /incomes` (planificado)
 
