@@ -7,7 +7,7 @@ class InstallmentPurchase < ApplicationRecord
   validates :total_amount, numericality: { greater_than: 0 }
   validates :installments_count,
             numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: 48 }
-  validates :first_period, presence: true, format: { with: /\A\d{4}-\d{2}\z/, message: "debe tener formato AAAA-MM" }
+  validates :first_period, presence: true, format: { with: /\A\d{4}-(0[1-9]|1[0-2])\z/, message: "debe tener formato AAAA-MM" }
 
   # Monto de cada cuota (redondeado a 2 decimales)
   def monto_por_cuota

@@ -3,6 +3,7 @@ class SavingsGoal < ApplicationRecord
 
   validates :name, presence: true
   validates :target_amount, numericality: { greater_than: 0 }
+  validates :saved_amount, numericality: { greater_than_or_equal_to: 0 }
 
   def progress
     return 0 if target_amount.zero?
