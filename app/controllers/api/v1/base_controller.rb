@@ -41,6 +41,16 @@ class Api::V1::BaseController < ActionController::API
     current_user.admin? ? Income.all : current_user.incomes
   end
 
+  # Las metas de ahorro y las compras en cuotas pertenecen al grupo familiar del usuario.
+  # El admin ve las de todos.
+  def visible_savings_goals
+    current_user.admin? ? SavingsGoal.all : current_user.family_group.savings_goals
+  end
+
+  def visible_installment_purchases
+    current_user.admin? ? InstallmentPurchase.all : current_user.family_group.installment_purchases
+  end
+
   # Formato único de errores: { "errors": [ { "field": "...", "message": "..." } ] }
 
   # Un solo mensaje general (401, 403, 404...). El campo es "base".

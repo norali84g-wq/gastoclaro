@@ -106,9 +106,17 @@ El `404` de cualquier endpoint con `:id` responde:
 | POST | `/incomes` | Sí | cualquier usuario | existe |
 | PATCH | `/incomes/:id` | Sí | dueño del ingreso o admin | existe |
 | DELETE | `/incomes/:id` | Sí | dueño del ingreso o admin | existe |
+| GET | `/savings_goals` | Sí | cualquier usuario | existe |
+| POST | `/savings_goals` | Sí | cualquier usuario | existe |
+| PATCH | `/savings_goals/:id` | Sí | mismo grupo familiar o admin | existe |
+| DELETE | `/savings_goals/:id` | Sí | mismo grupo familiar o admin | existe |
+| GET | `/installment_purchases` | Sí | cualquier usuario | existe |
+| POST | `/installment_purchases` | Sí | cualquier usuario | existe |
+| PATCH | `/installment_purchases/:id` | Sí | mismo grupo familiar o admin | existe |
+| DELETE | `/installment_purchases/:id` | Sí | mismo grupo familiar o admin | existe |
 | GET | `/users` | Sí | solo admin | existe |
 
-Esta tabla lista solo lo que existe hoy. Los endpoints que todavía no existen están en [Endpoints planificados](#endpoints-planificados). Más adelante se prevén endpoints de metas de ahorro y compras en cuotas; se agregan cuando se definan.
+Esta tabla lista solo lo que existe hoy. Los endpoints que todavía no existen están en [Endpoints planificados](#endpoints-planificados).
 
 ## Formas de las respuestas
 
@@ -166,6 +174,31 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 | `amount` | string decimal | No | monto |
 | `date` | string `YYYY-MM-DD` | No | fecha del ingreso |
 | `user` | objeto `{ id, user }` | No | a quién pertenece. Importa para el admin, que ve los de todos. Lo traen todos los endpoints de ingresos y `incomes` dentro de `GET /dashboard` |
+
+### Meta de ahorro
+
+| Campo | Tipo | Puede ser `null` | Qué es |
+|-------|------|:----------------:|--------|
+| `id` | integer | No | identificador |
+| `name` | string | No | nombre de la meta |
+| `target_amount` | string decimal | No | monto que se quiere juntar |
+| `saved_amount` | string decimal | No | monto ahorrado hasta ahora |
+| `deadline` | string `YYYY-MM-DD` | **Sí** | fecha límite, si la hay |
+| `progress_percentage` | integer | No | **calculado, no se guarda**: `saved_amount / target_amount × 100`, redondeado. Puede superar `100` si se ahorró más que el objetivo |
+
+### Compra en cuotas
+
+| Campo | Tipo | Puede ser `null` | Qué es |
+|-------|------|:----------------:|--------|
+| `id` | integer | No | identificador |
+| `description` | string | No | qué se compró |
+| `total_amount` | string decimal | No | monto total de la compra |
+| `installments_count` | integer | No | cantidad de cuotas, de 1 a 48 |
+| `first_period` | string `YYYY-MM` | No | mes de la primera cuota |
+| `category_id` | integer | No | categoría |
+| `vendor_id` | integer | **Sí** | comercio, si se informó |
+| `installment_amount` | string decimal | No | **calculado**: `total_amount / installments_count`, redondeado a 2 decimales |
+| `remaining_installments` | integer | No | **calculado**: cuotas que faltan hasta el mes actual (nunca menos de `0`) |
 
 ---
 
@@ -568,6 +601,164 @@ curl -X DELETE http://localhost:3000/api/v1/incomes/<INCOME_ID> -H "Authorizatio
 ```
 
 `204`, sin cuerpo. `404` si no existe o no es del usuario.
+
+---
+
+## Metas de ahorro
+
+Las metas pertenecen al **grupo familiar** del usuario. Cada usuario registrado por la API tiene su propio grupo, así que ve solo las suyas. El admin ve y modifica las de todos. Una meta de otro grupo responde `404`. El aporte de ahorro **no es consumo**: no cambia el dashboard.
+
+### `GET /savings_goals`
+
+Protegido. Lista las metas, de la más reciente a la más antigua.
+
+```bash
+curl http://localhost:3000/api/v1/savings_goals -H "Authorization: Bearer <TOKEN>"
+```
+
+`200` (lista de **Meta de ahorro**):
+
+```json
+[
+  { "id": 1, "name": "Viaje", "target_amount": "1000.0", "saved_amount": "250.0", "deadline": null, "progress_percentage": 25 }
+]
+```
+
+### `POST /savings_goals`
+
+Protegido. La meta queda en el grupo familiar del usuario; cualquier `family_group_id` enviado se ignora.
+
+| Campo | Tipo | Obligatorio | Validación |
+|-------|------|:-----------:|------------|
+| `name` | string | Sí | no puede estar vacío |
+| `target_amount` | number | Sí | mayor a 0 |
+| `saved_amount` | number | No | mayor o igual a 0; por defecto `0` |
+| `deadline` | string `YYYY-MM-DD` | No | fecha válida |
+
+```bash
+curl -X POST http://localhost:3000/api/v1/savings_goals \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"name":"Notebook","target_amount":800,"deadline":"2027-03-01"}'
+```
+
+`201`: la meta creada, con la forma **Meta de ahorro**:
+
+```json
+{ "id": 2, "name": "Notebook", "target_amount": "800.0", "saved_amount": "0.0", "deadline": "2027-03-01", "progress_percentage": 0 }
+```
+
+`422` con datos inválidos:
+
+```json
+{ "errors": [ { "field": "target_amount", "message": "debe ser mayor a 0" } ] }
+```
+
+### `PATCH /savings_goals/:id`
+
+Protegido. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/savings_goals/<GOAL_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"saved_amount":500}'
+```
+
+`200`: la meta actualizada, con `progress_percentage` recalculado. `404` si no existe o es de otro grupo. `422` si hay datos inválidos. A diferencia del back-office, la API **no envía el mail** de felicitación al cumplir una meta.
+
+### `DELETE /savings_goals/:id`
+
+Protegido.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/savings_goals/<GOAL_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `404` si no existe o es de otro grupo.
+
+---
+
+## Compras en cuotas
+
+Igual que las metas, pertenecen al **grupo familiar** del usuario (el admin ve todas; una compra de otro grupo responde `404`). Las cuotas **no crean consumo**: no cambian el dashboard.
+
+### `GET /installment_purchases`
+
+Protegido. Lista las compras, de la más reciente a la más antigua.
+
+```bash
+curl http://localhost:3000/api/v1/installment_purchases -H "Authorization: Bearer <TOKEN>"
+```
+
+`200` (lista de **Compra en cuotas**):
+
+```json
+[
+  {
+    "id": 1, "description": "Heladera", "total_amount": "1200.0", "installments_count": 12,
+    "first_period": "2026-11", "category_id": 4, "vendor_id": null,
+    "installment_amount": "100.0", "remaining_installments": 11
+  }
+]
+```
+
+### `POST /installment_purchases`
+
+Protegido.
+
+| Campo | Tipo | Obligatorio | Validación |
+|-------|------|:-----------:|------------|
+| `description` | string | Sí | no puede estar vacío |
+| `total_amount` | number | Sí | mayor a 0 |
+| `installments_count` | integer | Sí | entero de 1 a 48 |
+| `first_period` | string `YYYY-MM` | Sí | mes válido, por ejemplo `2026-11` |
+| `category_id` | integer | Sí | tiene que existir |
+| `vendor_id` | integer | No | si se envía, tiene que existir |
+
+```bash
+curl -X POST http://localhost:3000/api/v1/installment_purchases \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"description":"Televisor","total_amount":900,"installments_count":3,"first_period":"2026-11","category_id":<CATEGORY_ID>}'
+```
+
+`201`: la compra creada, con la forma **Compra en cuotas**:
+
+```json
+{
+  "id": 2, "description": "Televisor", "total_amount": "900.0", "installments_count": 3,
+  "first_period": "2026-11", "category_id": 4, "vendor_id": null,
+  "installment_amount": "300.0", "remaining_installments": 2
+}
+```
+
+`422` con datos inválidos (por ejemplo, un `first_period` con un mes que no existe):
+
+```json
+{ "errors": [ { "field": "first_period", "message": "debe tener formato AAAA-MM" } ] }
+```
+
+Un `category_id` que no existe da `422` con "debe existir", y un `vendor_id` que no existe, con "no existe". Si hay varios campos inválidos, la API los devuelve todos juntos.
+
+### `PATCH /installment_purchases/:id`
+
+Protegido. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/installment_purchases/<PURCHASE_ID> \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"installments_count":6}'
+```
+
+`200`: la compra actualizada, con `installment_amount` y `remaining_installments` recalculados. `404` si no existe o es de otro grupo. `422` si hay datos inválidos.
+
+### `DELETE /installment_purchases/:id`
+
+Protegido.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/installment_purchases/<PURCHASE_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `404` si no existe o es de otro grupo.
 
 ---
 
