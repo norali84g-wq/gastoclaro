@@ -141,9 +141,9 @@ bin/rubocop         # estilo del código
 bin/brakeman        # análisis de seguridad
 ```
 
-Estado verificado al 2026-10-31: **120 tests, 365 assertions, 0 fallas, 0 errores, 0 omitidos.** Cubren los endpoints de la API v1, los modelos, parte del back-office y los mailers.
+Estado verificado al 2026-11-02: **186 tests, 596 assertions, 0 fallas, 0 errores, 0 omitidos.** Cubren los endpoints de la API v1, los modelos, parte del back-office y los mailers.
 
-- **Rubocop:** 107 archivos inspeccionados, **0 ofensas**.
+- **Rubocop:** 113 archivos inspeccionados, **0 ofensas**.
 - **Brakeman:** **0 advertencias activas**. Hay 2 advertencias ignoradas a propósito, ambas falsos positivos de mass assignment en `Admin::UsersController`, justificados y documentados en `config/brakeman.ignore`. Esa pantalla solo es accesible para administradores logueados y existe justamente para que un admin cree usuarios y los marque como administradores.
 
 **Lo que hoy no está cubierto por tests:** las pantallas del back-office de gastos, ingresos, usuarios, comercios, compras en cuotas, lista de compras, ahorro y estadísticas, y no hay tests de sistema (navegador).
