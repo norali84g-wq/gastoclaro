@@ -49,6 +49,8 @@ Rails.application.routes.draw do
       patch "shopping_list_items/:id", to: "shopping_list_items#update"
       delete "shopping_list_items/:id", to: "shopping_list_items#destroy"
       get "categories", to: "categories#index"
+      get "categories/:id/comparison", to: "categories#comparison"
+      get "statistics", to: "statistics#show"
       post "categories", to: "categories#create"
       patch "categories/:id", to: "categories#update"
       delete "categories/:id", to: "categories#destroy"
