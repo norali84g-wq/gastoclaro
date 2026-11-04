@@ -114,6 +114,10 @@ El `404` de cualquier endpoint con `:id` responde:
 | POST | `/installment_purchases` | Sí | cualquier usuario | existe |
 | PATCH | `/installment_purchases/:id` | Sí | mismo grupo familiar o admin | existe |
 | DELETE | `/installment_purchases/:id` | Sí | mismo grupo familiar o admin | existe |
+| GET | `/shopping_list_items` | Sí | cualquier usuario | existe |
+| POST | `/shopping_list_items` | Sí | cualquier usuario | existe |
+| PATCH | `/shopping_list_items/:id` | Sí | mismo grupo familiar o admin | existe |
+| DELETE | `/shopping_list_items/:id` | Sí | mismo grupo familiar o admin | existe |
 | GET | `/users` | Sí | solo admin | existe |
 
 Esta tabla lista solo lo que existe hoy. Los endpoints que todavía no existen están en [Endpoints planificados](#endpoints-planificados).
@@ -185,6 +189,18 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 | `saved_amount` | string decimal | No | monto ahorrado hasta ahora |
 | `deadline` | string `YYYY-MM-DD` | **Sí** | fecha límite, si la hay |
 | `progress_percentage` | integer | No | **calculado, no se guarda**: `saved_amount / target_amount × 100`, redondeado. Puede superar `100` si se ahorró más que el objetivo |
+
+### Ítem de la lista de gastos fijos
+
+| Campo | Tipo | Puede ser `null` | Qué es |
+|-------|------|:----------------:|--------|
+| `id` | integer | No | identificador |
+| `name` | string | No | qué se planifica comprar o pagar |
+| `period` | string `YYYY-MM` | No | mes al que corresponde |
+| `quantity` | string decimal | **Sí** | cantidad |
+| `estimated_unit_price` | string decimal | No | precio unitario estimado |
+| `subtotal` | string decimal | No | **calculado, no se guarda**: `quantity × estimated_unit_price` (`0` si no hay cantidad) |
+| `category` | objeto `{ id, name }` | No | categoría del ítem |
 
 ### Compra en cuotas
 
@@ -326,8 +342,8 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
     { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
   "consumption_by_category": [
-    { "category": "Limpieza", "total": "25000.0" },
-    { "category": "Supermercado", "total": "13101.0" }
+    { "category": "Limpieza", "total": "25000.0", "planned": "30000.0" },
+    { "category": "Supermercado", "total": "13101.0", "planned": "0.0" }
   ],
   "monthly_savings": [
     { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" }
@@ -341,7 +357,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 | `income`, `consumption`, `savings` | totales del mes. `savings = income - consumption`; puede ser negativo si se gastó más de lo que se ganó |
 | `savings_goal_percentage` | entero de 0 a 100, nunca `null`. Para un usuario recién registrado vale `0` |
 | `incomes` | los ingresos del mes, del más antiguo al más reciente. Cada uno trae `id`, `user` (objeto `{ "id", "user" }`, igual que en el resto de la API), `amount` y `date` |
-| `consumption_by_category` | el consumo del mes agrupado por nombre de categoría. **No tiene un orden garantizado**: el front lo ordena como necesite |
+| `consumption_by_category` | el consumo del mes (`total`) y lo planificado (`planned`, suma de la lista de gastos fijos del mes) agrupado por nombre de categoría. Una categoría solo planificada trae `total` en `0.0`. **No tiene un orden garantizado**: el front lo ordena como necesite |
 | `monthly_savings` | los últimos 6 meses, del más antiguo al más reciente |
 | `monthly_savings[].accumulated` | ahorro acumulado: la suma corrida de `savings` dentro de esos 6 meses. El primer mes de la lista parte de 0, así que **no** es el ahorro de toda la vida |
 
@@ -759,6 +775,62 @@ curl -X DELETE http://localhost:3000/api/v1/installment_purchases/<PURCHASE_ID> 
 ```
 
 `204`, sin cuerpo. `404` si no existe o es de otro grupo.
+
+---
+
+## Lista de gastos fijos
+
+Lo planificado de cada mes, por categoría. Pertenece al **grupo familiar** del usuario (cada usuario registrado por la API tiene el suyo). El admin ve y modifica los de todos. Un ítem de otro grupo responde `404`. Lo planificado se compara con el consumo real en `consumption_by_category` de `GET /dashboard` (campo `planned`).
+
+### `GET /shopping_list_items`
+
+Protegido. Lista los ítems ordenados por mes y nombre. Con `?period=AAAA-MM` trae solo ese mes.
+
+```bash
+curl "http://localhost:3000/api/v1/shopping_list_items?period=2026-11" -H "Authorization: Bearer <TOKEN>"
+```
+
+`200` (lista de **Ítem de la lista de gastos fijos**):
+
+```json
+[
+  { "id": 1, "name": "Arroz", "period": "2026-11", "quantity": "2.0", "estimated_unit_price": "1500.0", "subtotal": "3000.0", "category": { "id": 1, "name": "Comida" } }
+]
+```
+
+### `POST /shopping_list_items`
+
+Protegido. El ítem queda en el grupo familiar del usuario; cualquier `family_group_id` enviado se ignora.
+
+| Campo | Tipo | Obligatorio | Validación |
+|-------|------|:-----------:|------------|
+| `name` | string | Sí | no puede estar vacío |
+| `period` | string `AAAA-MM` | Sí | mes válido, por ejemplo `2026-11` |
+| `quantity` | number | No | mayor a 0 |
+| `estimated_unit_price` | number | Sí | mayor o igual a 0 |
+| `category_id` | integer | Sí | tiene que existir |
+
+```bash
+curl -X POST http://localhost:3000/api/v1/shopping_list_items \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"name":"Fideos","period":"2026-11","quantity":3,"estimated_unit_price":800,"category_id":1}'
+```
+
+`201`: el ítem creado, con la forma **Ítem de la lista de gastos fijos**. `422` con datos inválidos:
+
+```json
+{ "errors": [ { "field": "period", "message": "debe tener formato AAAA-MM" } ] }
+```
+
+### `PATCH /shopping_list_items/:id`
+
+Protegido. Acepta los mismos campos y reglas que `POST`, todos opcionales. Solo se modifica lo que se envía.
+
+`200`: el ítem actualizado, con `subtotal` recalculado. `404` si no existe o es de otro grupo. `422` si hay datos inválidos.
+
+### `DELETE /shopping_list_items/:id`
+
+Protegido. `204`, sin cuerpo. `404` si no existe o es de otro grupo.
 
 ---
 

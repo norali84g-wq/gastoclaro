@@ -17,6 +17,14 @@ class Api::V1::DashboardController < Api::V1::BaseController
       .group("categories.name")
       .sum(:amount)
 
+    planned_by_category = visible_shopping_list_items
+      .where(period: today.strftime("%Y-%m"))
+      .includes(:category)
+      .group_by { |item| item.category.name }
+      .transform_values { |items| items.sum(&:subtotal) }
+
+    category_names = (consumption_by_category.keys + planned_by_category.keys).uniq
+
     savings = income - consumption
 
     accumulated = 0
@@ -48,8 +56,12 @@ class Api::V1::DashboardController < Api::V1::BaseController
       incomes: month_incomes.includes(:user).order(:date).map { |i|
         { id: i.id, user: { id: i.user.id, user: i.user.user }, amount: i.amount, date: i.date }
       },
-      consumption_by_category: consumption_by_category.map { |category, total|
-        { category: category, total: total }
+      consumption_by_category: category_names.map { |name|
+        {
+          category: name,
+          total: consumption_by_category.fetch(name, 0).to_d,
+          planned: planned_by_category.fetch(name, 0).to_d
+        }
       },
       monthly_savings: monthly_savings
     }

@@ -100,4 +100,22 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_equal 600, decimal(septiembre["savings"])
     assert_equal 1000, decimal(septiembre["accumulated"])
   end
+
+  test "consumption_by_category trae lo planificado del mes y las categorias solo planificadas" do
+    Expense.create!(user: @user, category: @comida, amount: 300, date: Date.new(2026, 9, 5))
+    ShoppingListItem.create!(family_group: @familia, category: @comida, name: "Arroz",
+                             period: "2026-09", quantity: 2, estimated_unit_price: 100)
+    ShoppingListItem.create!(family_group: @familia, category: @transporte, name: "SUBE",
+                             period: "2026-09", quantity: 1, estimated_unit_price: 50)
+    ShoppingListItem.create!(family_group: @familia, category: @comida, name: "Mes anterior",
+                             period: "2026-08", quantity: 1, estimated_unit_price: 999)
+    ShoppingListItem.create!(family_group: @otra_familia, category: @comida, name: "Ajeno",
+                             period: "2026-09", quantity: 1, estimated_unit_price: 999)
+
+    por_categoria = dashboard["consumption_by_category"].to_h do |c|
+      [ c["category"], [ decimal(c["total"]), decimal(c["planned"]) ] ]
+    end
+
+    assert_equal({ "Comida" => [ 300, 200 ], "Transporte" => [ 0, 50 ] }, por_categoria)
+  end
 end
