@@ -5,6 +5,7 @@ class Category < ApplicationRecord
   has_many :installment_purchases, dependent: :destroy
 
   validates :name, presence: true
+  validates :parent, presence: true, if: -> { parent_id.present? }
   validate :parent_is_not_self_or_descendant
 
   # Ids de todas las subcategorías de esta categoría, de cualquier nivel. Si los datos ya tuvieran un

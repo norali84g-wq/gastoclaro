@@ -98,6 +98,8 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/me` | Sí | cualquier usuario | existe |
 | GET | `/dashboard` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
+| POST | `/categories` | Sí | solo admin | existe |
+| PATCH | `/categories/:id` | Sí | solo admin | existe |
 | GET | `/expenses` | Sí | cualquier usuario | existe |
 | POST | `/expenses` | Sí | cualquier usuario | existe |
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | existe |
@@ -141,8 +143,8 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 |-------|------|:----------------:|--------|
 | `id` | integer | No | identificador |
 | `name` | string | No | nombre |
-| `parent_id` | integer | **Sí** | siempre `null` en el TP2 |
-| `tracks_installments` | boolean | **Sí** | siempre `null` en el TP2 |
+| `parent_id` | integer | **Sí** | id de la categoría padre; `null` si es una categoría principal |
+| `tracks_installments` | boolean | **Sí** | `null` si no se indicó |
 
 ### Gasto
 
@@ -381,6 +383,31 @@ curl http://localhost:3000/api/v1/categories -H "Authorization: Bearer <TOKEN>"
   { "id": 1, "name": "Supermercado", "parent_id": null, "tracks_installments": null }
 ]
 ```
+
+### `POST /categories`
+
+Protegido, **solo admin** (las categorías son compartidas por todos los usuarios). Un usuario común recibe `403`.
+
+| Campo | Tipo | Obligatorio | Validación |
+|-------|------|:-----------:|------------|
+| `name` | string | Sí | no puede estar vacío |
+| `parent_id` | integer | No | tiene que ser una categoría que exista |
+
+```bash
+curl -X POST http://localhost:3000/api/v1/categories \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"name":"Tarjetas de crédito"}'
+```
+
+`201`: la categoría creada, con la forma **Categoría**. `422` con datos inválidos:
+
+```json
+{ "errors": [ { "field": "name", "message": "no puede estar en blanco" } ] }
+```
+
+### `PATCH /categories/:id`
+
+Protegido, **solo admin**. Acepta los mismos campos y reglas que `POST`, todos opcionales. Una categoría no puede ser su propio padre ni colgar de una de sus subcategorías (`422` en `parent_id`). `404` si no existe. Borrar categorías no está en la API: una categoría con gastos no se puede borrar sin perder datos.
 
 ---
 
