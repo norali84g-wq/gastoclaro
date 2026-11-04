@@ -1,12 +1,26 @@
 class Api::V1::CategoriesController < Api::V1::BaseController
   # Las categorías son compartidas por todos los usuarios: solo el admin las crea y las edita.
   before_action :require_admin!, only: %i[create update destroy]
-  before_action :set_category, only: %i[update destroy]
+  before_action :set_category, only: %i[update destroy comparison]
 
   def index
     categories = Category.order(:name)
 
     render json: categories.map { |category| category_json(category) }
+  end
+
+  # Lo estimado (lista de gastos fijos) contra lo real (gastos) de una categoría en un mes
+  # (`?period=AAAA-MM`; si falta, el mes en curso). Cualquier usuario la consulta, con sus datos.
+  def comparison
+    period = params[:period].presence || Date.current.strftime("%Y-%m")
+    unless period.match?(CategoryComparison::PERIOD_FORMAT)
+      return render_error(api_t("invalid_period"), status: :unprocessable_entity, field: "period")
+    end
+
+    render json: CategoryComparison.new(
+      category: @category, period: period,
+      expenses: visible_expenses, shopping_items: visible_shopping_list_items
+    ).as_json
   end
 
   def create

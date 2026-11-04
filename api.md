@@ -99,6 +99,8 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/dashboard` | Sí | cualquier usuario | existe |
 | GET | `/savings` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
+| GET | `/categories/:id/comparison` | Sí | cualquier usuario | existe |
+| GET | `/statistics` | Sí | cualquier usuario | existe |
 | POST | `/categories` | Sí | solo admin | existe |
 | PATCH | `/categories/:id` | Sí | solo admin | existe |
 | DELETE | `/categories/:id` | Sí | solo admin | existe |
@@ -346,8 +348,8 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
     { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
   "consumption_by_category": [
-    { "category": "Limpieza", "total": "25000.0", "planned": "30000.0" },
-    { "category": "Supermercado", "total": "13101.0", "planned": "0.0" }
+    { "category_id": 2, "category": "Limpieza", "total": "25000.0", "planned": "30000.0" },
+    { "category_id": 1, "category": "Supermercado", "total": "13101.0", "planned": "0.0" }
   ],
   "monthly_savings": [
     { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" }
@@ -361,7 +363,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 | `income`, `consumption`, `savings` | totales del mes. `savings = income - consumption`; puede ser negativo si se gastó más de lo que se ganó |
 | `savings_goal_percentage` | entero de 0 a 100, nunca `null`. Para un usuario recién registrado vale `0` |
 | `incomes` | los ingresos del mes, del más antiguo al más reciente. Cada uno trae `id`, `user` (objeto `{ "id", "user" }`, igual que en el resto de la API), `amount` y `date` |
-| `consumption_by_category` | el consumo del mes (`total`) y lo planificado (`planned`, suma de la lista de gastos fijos del mes) agrupado por nombre de categoría. Una categoría solo planificada trae `total` en `0.0`. **No tiene un orden garantizado**: el front lo ordena como necesite |
+| `consumption_by_category` | el consumo del mes (`total`) y lo planificado (`planned`, suma de la lista de gastos fijos del mes) por categoría. Cada fila trae `category_id` (para abrir el detalle en `/categories/:id/comparison`) y `category` (el nombre). Una categoría solo planificada trae `total` en `0.0`. **No tiene un orden garantizado**: el front lo ordena como necesite |
 | `monthly_savings` | los últimos 6 meses, del más antiguo al más reciente |
 | `monthly_savings[].accumulated` | ahorro acumulado: la suma corrida de `savings` dentro de esos 6 meses. El primer mes de la lista parte de 0, así que **no** es el ahorro de toda la vida |
 
@@ -395,6 +397,67 @@ curl http://localhost:3000/api/v1/savings -H "Authorization: Bearer <TOKEN>"
 | `months` | del mes más antiguo al más reciente; `[]` si todavía no hay ingresos ni gastos. Un mes sin movimientos aparece en cero |
 | `months[].savings` | `income - consumption`; puede ser negativo |
 | `months[].accumulated` | suma corrida de `savings` desde el primer mes de la lista |
+
+---
+
+## Estadísticas
+
+### `GET /statistics`
+
+Protegido, cualquier usuario (el admin ve las de todos). Estadísticas de un año o de un mes de ese año, como las del back-office: consumo, ahorro y gasto hormiga mes a mes, consumo por categoría y detalle del gasto hormiga. **Gasto hormiga:** un producto que se compró y no estaba en la lista de gastos fijos de ese mes. Solo se miran las categorías sin subcategorías.
+
+| Parámetro (query) | Tipo | Obligatorio | Detalle |
+|-------------------|------|:-----------:|---------|
+| `year` | integer | No | de 2000 al año en curso; si falta, el año en curso. Si no es válido: `422` en `year` |
+| `month` | integer, 1 a 12 | No | acota `by_category` y `unplanned` a ese mes. Si no es válido: `422` en `month` |
+
+```bash
+curl "http://localhost:3000/api/v1/statistics?year=2026&month=9" -H "Authorization: Bearer <TOKEN>"
+```
+
+`200`:
+
+```json
+{
+  "year": 2026,
+  "month": 9,
+  "available_years": [2026, 2025],
+  "months": [
+    { "month": "2026-08", "income": "1000.0", "consumption": "300.0", "savings": "700.0", "unplanned": "0.0" },
+    { "month": "2026-09", "income": "500.0", "consumption": "700.0", "savings": "-200.0", "unplanned": "70.0" }
+  ],
+  "by_category": [
+    {
+      "category": { "id": 5, "name": "Comida" },
+      "total": "200.0",
+      "percentage": 66.7,
+      "subcategories": [
+        { "category": { "id": 6, "name": "Verduras" }, "real": "150.0", "planned": "100.0",
+          "over_budget": true, "percentage": 50.0 }
+      ]
+    }
+  ],
+  "unplanned": {
+    "total": "70.0",
+    "by_vendor": [ { "vendor": "Coto", "total": "60.0" }, { "vendor": null, "total": "10.0" } ],
+    "items": [
+      { "name": "Cafe", "quantity": 2, "unit_price": "30.0", "subtotal": "60.0",
+        "date": "2026-09-05", "category_id": 4, "vendor": "Coto" }
+    ]
+  }
+}
+```
+
+| Campo | Qué es |
+|-------|--------|
+| `available_years` | del año del primer movimiento al año en curso, del más reciente al más antiguo |
+| `months` | **todos** los meses del año (hasta el mes en curso, si es el año en curso), del más antiguo al más reciente, aunque se pase `month`. `savings = income - consumption`; `unplanned` es el gasto hormiga del mes |
+| `by_category` | el consumo del período (el año, o el mes si se pasa `month`) de las categorías sin subcategorías, agrupado bajo su categoría principal y ordenado de mayor a menor. `percentage` es la parte del consumo total del período, redondeada a un decimal. `planned` suma la lista de gastos fijos de esos meses |
+| `by_category[].subcategories` | una fila por subcategoría, de mayor a menor consumo. `over_budget` es `true` si hay algo planificado y lo real lo supera |
+| `unplanned.by_vendor` | gasto hormiga por comercio, de mayor a menor. `vendor` es `null` si el gasto no tiene comercio |
+| `unplanned.items` | los productos del gasto hormiga del período, del más antiguo al más reciente |
+
+`401` sin token. `422` si `year` o `month` no son válidos (un solo error por pedido).
 
 ---
 
@@ -456,6 +519,62 @@ curl -X DELETE http://localhost:3000/api/v1/categories/<CATEGORY_ID> -H "Authori
 ```
 
 `403` si no es admin. `404` si no existe.
+
+### `GET /categories/:id/comparison`
+
+Protegido, cualquier usuario. Compara lo **estimado** (la lista de gastos fijos del mes) con lo **real** (los gastos del usuario; el admin ve los de todos) de una categoría en un mes. Es el detalle que el back-office muestra al abrir una categoría.
+
+| Parámetro (query) | Tipo | Obligatorio | Detalle |
+|-------------------|------|:-----------:|---------|
+| `period` | string `YYYY-MM` | No | si falta, el mes en curso. Con otro formato: `422` en `period` |
+
+```bash
+curl "http://localhost:3000/api/v1/categories/<CATEGORY_ID>/comparison?period=2026-09" -H "Authorization: Bearer <TOKEN>"
+```
+
+`200`. Si la categoría **no tiene subcategorías**, trae una fila por producto en `items` y `subcategories` vacío:
+
+```json
+{
+  "category": { "id": 1, "name": "Supermercado" },
+  "period": "2026-09",
+  "planned_total": "250.0",
+  "real_total": "290.0",
+  "subcategories": [],
+  "items": [
+    { "name": "Arroz", "planned_quantity": "2.0", "planned_unit_price": "100.0", "planned_total": "200.0",
+      "real_quantity": 3, "real_unit_price": "90.0", "real_total": "270.0", "status": "bought" },
+    { "name": "Chicle", "planned_quantity": "0.0", "planned_unit_price": "0.0", "planned_total": "0.0",
+      "real_quantity": 1, "real_unit_price": "20.0", "real_total": "20.0", "status": "unplanned" }
+  ]
+}
+```
+
+Si **tiene subcategorías**, trae una fila por subcategoría (por nombre) en `subcategories` e `items` vacío:
+
+```json
+{
+  "category": { "id": 5, "name": "Comida" },
+  "period": "2026-09",
+  "planned_total": "100.0",
+  "real_total": "190.0",
+  "subcategories": [
+    { "category": { "id": 7, "name": "Carnes" }, "planned": "0.0", "real": "40.0", "over_budget": false },
+    { "category": { "id": 6, "name": "Verduras" }, "planned": "100.0", "real": "150.0", "over_budget": true }
+  ],
+  "items": []
+}
+```
+
+| Campo | Qué es |
+|-------|--------|
+| `planned_total` | suma de la lista de gastos fijos del mes (de las subcategorías, si tiene) |
+| `real_total` | suma de los gastos del mes de esa categoría (de las subcategorías, si tiene) |
+| `items[].status` | `bought` (estaba planificado y se compró), `unplanned` (se compró y no estaba planificado: gasto hormiga) o `not_bought` (estaba planificado y no se compró) |
+| `items[]` | los productos se emparejan por nombre, sin importar mayúsculas ni espacios en los extremos. `real_unit_price` es el precio promedio de lo comprado |
+| `subcategories[].over_budget` | `true` si hay algo planificado y lo real lo supera |
+
+`401` sin token. `404` si la categoría no existe. `422` si `period` no tiene el formato `YYYY-MM`.
 
 ---
 

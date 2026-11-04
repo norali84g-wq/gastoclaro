@@ -118,4 +118,14 @@ class Api::V1::DashboardControllerTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "Comida" => [ 300, 200 ], "Transporte" => [ 0, 50 ] }, por_categoria)
   end
+
+  test "consumption_by_category trae el id de cada categoria" do
+    Expense.create!(user: @user, category: @comida, amount: 300, date: Date.new(2026, 9, 5))
+    ShoppingListItem.create!(family_group: @familia, category: @transporte, name: "SUBE",
+                             period: "2026-09", quantity: 1, estimated_unit_price: 50)
+
+    ids = dashboard["consumption_by_category"].to_h { |c| [ c["category"], c["category_id"] ] }
+
+    assert_equal({ "Comida" => @comida.id, "Transporte" => @transporte.id }, ids)
+  end
 end
