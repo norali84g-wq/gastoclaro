@@ -97,6 +97,7 @@ El `404` de cualquier endpoint con `:id` responde:
 | POST | `/register` | No | — | existe |
 | GET | `/me` | Sí | cualquier usuario | existe |
 | GET | `/dashboard` | Sí | cualquier usuario | existe |
+| GET | `/savings` | Sí | cualquier usuario | existe |
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | POST | `/categories` | Sí | solo admin | existe |
 | PATCH | `/categories/:id` | Sí | solo admin | existe |
@@ -362,6 +363,37 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 | `consumption_by_category` | el consumo del mes (`total`) y lo planificado (`planned`, suma de la lista de gastos fijos del mes) agrupado por nombre de categoría. Una categoría solo planificada trae `total` en `0.0`. **No tiene un orden garantizado**: el front lo ordena como necesite |
 | `monthly_savings` | los últimos 6 meses, del más antiguo al más reciente |
 | `monthly_savings[].accumulated` | ahorro acumulado: la suma corrida de `savings` dentro de esos 6 meses. El primer mes de la lista parte de 0, así que **no** es el ahorro de toda la vida |
+
+---
+
+## Ahorro
+
+### `GET /savings`
+
+Protegido. El ahorro mes a mes **desde el primer movimiento hasta el mes en curso**: es el detalle completo de lo que `GET /dashboard` resume en `monthly_savings` (solo los últimos 6 meses). El admin ve el de todos. No incluye meses futuros.
+
+```bash
+curl http://localhost:3000/api/v1/savings -H "Authorization: Bearer <TOKEN>"
+```
+
+`200`:
+
+```json
+{
+  "savings_goal_percentage": 10,
+  "months": [
+    { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" },
+    { "month": "2026-10", "income": "0.0", "consumption": "1000.0", "savings": "-1000.0", "accumulated": "410899.0" }
+  ]
+}
+```
+
+| Campo | Qué es |
+|-------|--------|
+| `savings_goal_percentage` | entero de 0 a 100, nunca `null` (igual que en `GET /dashboard`) |
+| `months` | del mes más antiguo al más reciente; `[]` si todavía no hay ingresos ni gastos. Un mes sin movimientos aparece en cero |
+| `months[].savings` | `income - consumption`; puede ser negativo |
+| `months[].accumulated` | suma corrida de `savings` desde el primer mes de la lista |
 
 ---
 
