@@ -101,6 +101,7 @@ El `404` de cualquier endpoint con `:id` responde:
 | GET | `/categories` | Sí | cualquier usuario | existe |
 | POST | `/categories` | Sí | solo admin | existe |
 | PATCH | `/categories/:id` | Sí | solo admin | existe |
+| DELETE | `/categories/:id` | Sí | solo admin | existe |
 | GET | `/expenses` | Sí | cualquier usuario | existe |
 | POST | `/expenses` | Sí | cualquier usuario | existe |
 | PATCH | `/expenses/:id` | Sí | dueño del gasto o admin | existe |
@@ -439,7 +440,22 @@ curl -X POST http://localhost:3000/api/v1/categories \
 
 ### `PATCH /categories/:id`
 
-Protegido, **solo admin**. Acepta los mismos campos y reglas que `POST`, todos opcionales. Una categoría no puede ser su propio padre ni colgar de una de sus subcategorías (`422` en `parent_id`). `404` si no existe. Borrar categorías no está en la API: una categoría con gastos no se puede borrar sin perder datos.
+Protegido, **solo admin**. Acepta los mismos campos y reglas que `POST`, todos opcionales. Una categoría no puede ser su propio padre ni colgar de una de sus subcategorías (`422` en `parent_id`). `404` si no existe. 
+### `DELETE /categories/:id`
+
+Protegido, **solo admin**. Borra una categoría **sin uso**.
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/categories/<CATEGORY_ID> -H "Authorization: Bearer <TOKEN>"
+```
+
+`204`, sin cuerpo. `422` si la categoría tiene gastos, compras en cuotas, gastos fijos o subcategorías (se perdería ese historial), con el motivo en `base`:
+
+```json
+{ "errors": [ { "field": "base", "message": "No se puede borrar: tiene gastos, compras en cuotas, gastos fijos o subcategorías" } ] }
+```
+
+`403` si no es admin. `404` si no existe.
 
 ---
 

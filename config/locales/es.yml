@@ -6,6 +6,7 @@ es:
       not_found: "No encontrado"
       invalid_credentials: "Usuario o contraseña incorrectos"
       invalid_period: "no es válido"
+      category_in_use: "No se puede borrar: tiene gastos, compras en cuotas, gastos fijos o subcategorías"
 
   errors:
     messages:

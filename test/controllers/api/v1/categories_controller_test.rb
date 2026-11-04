@@ -112,4 +112,65 @@ class Api::V1::CategoriesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+  test "el admin borra una categoria sin uso y responde 204" do
+    categoria = Category.create!(name: "Sobrante")
+
+    assert_difference "Category.count", -1 do
+      delete "/api/v1/categories/#{categoria.id}", headers: @admin_headers
+    end
+
+    assert_response :no_content
+  end
+
+  test "un usuario comun no puede borrar categorias: 403" do
+    categoria = Category.create!(name: "Comida")
+
+    assert_no_difference "Category.count" do
+      delete "/api/v1/categories/#{categoria.id}", headers: @headers
+    end
+
+    assert_response :forbidden
+  end
+
+  test "no se borra una categoria con gastos: 422 y no se pierde nada" do
+    categoria = Category.create!(name: "Comida")
+    Expense.create!(user: @user, category: categoria, amount: 100, date: Date.current)
+
+    assert_no_difference [ "Category.count", "Expense.count" ] do
+      delete "/api/v1/categories/#{categoria.id}", headers: @admin_headers
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "base", response.parsed_body["errors"].first["field"]
+  end
+
+  test "no se borra una categoria con subcategorias: 422" do
+    padre = Category.create!(name: "Tarjetas")
+    Category.create!(name: "Visa", parent: padre)
+
+    assert_no_difference "Category.count" do
+      delete "/api/v1/categories/#{padre.id}", headers: @admin_headers
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "no se borra una categoria con gastos fijos: 422" do
+    categoria = Category.create!(name: "Comida")
+    ShoppingListItem.create!(family_group: @user.family_group, category: categoria, name: "Arroz",
+                             period: "2026-11", quantity: 1, estimated_unit_price: 10)
+
+    assert_no_difference "Category.count" do
+      delete "/api/v1/categories/#{categoria.id}", headers: @admin_headers
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "borrar una categoria que no existe da 404" do
+    delete "/api/v1/categories/999999", headers: @admin_headers
+
+    assert_response :not_found
+  end
 end

@@ -51,6 +51,7 @@ Rails.application.routes.draw do
       get "categories", to: "categories#index"
       post "categories", to: "categories#create"
       patch "categories/:id", to: "categories#update"
+      delete "categories/:id", to: "categories#destroy"
       get "expenses", to: "expenses#index"
       post "expenses", to: "expenses#create"
       patch "expenses/:id", to: "expenses#update"

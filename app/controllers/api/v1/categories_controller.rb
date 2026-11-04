@@ -1,7 +1,7 @@
 class Api::V1::CategoriesController < Api::V1::BaseController
   # Las categorías son compartidas por todos los usuarios: solo el admin las crea y las edita.
-  before_action :require_admin!, only: %i[create update]
-  before_action :set_category, only: :update
+  before_action :require_admin!, only: %i[create update destroy]
+  before_action :set_category, only: %i[update destroy]
 
   def index
     categories = Category.order(:name)
@@ -27,7 +27,25 @@ class Api::V1::CategoriesController < Api::V1::BaseController
     end
   end
 
+  # No se borra una categoría que tiene gastos, compras en cuotas, gastos fijos o subcategorías:
+  # se perdería ese historial. Primero hay que mover o borrar eso.
+  def destroy
+    if category_in_use?(@category)
+      render_error(api_t("category_in_use"), status: :unprocessable_entity)
+    else
+      @category.destroy!
+      head :no_content
+    end
+  end
+
   private
+
+  def category_in_use?(category)
+    category.expenses.exists? ||
+      category.installment_purchases.exists? ||
+      category.subcategories.exists? ||
+      ShoppingListItem.exists?(category_id: category.id)
+  end
 
   def set_category
     @category = Category.find(params[:id])
