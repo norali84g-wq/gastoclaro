@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       delete "logout", to: "sessions#destroy"
       post "register", to: "registrations#create"
       get "dashboard", to: "dashboard#show"
+      get "savings", to: "savings#show"
       get "incomes", to: "incomes#index"
       post "incomes", to: "incomes#create"
       patch "incomes/:id", to: "incomes#update"
