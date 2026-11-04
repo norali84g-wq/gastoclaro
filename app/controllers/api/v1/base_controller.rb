@@ -51,6 +51,10 @@ class Api::V1::BaseController < ActionController::API
     current_user.admin? ? InstallmentPurchase.all : current_user.family_group.installment_purchases
   end
 
+  def visible_shopping_list_items
+    current_user.admin? ? ShoppingListItem.all : current_user.family_group.shopping_list_items
+  end
+
   # Formato único de errores: { "errors": [ { "field": "...", "message": "..." } ] }
 
   # Un solo mensaje general (401, 403, 404...). El campo es "base".

@@ -326,8 +326,8 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
     { "id": 1, "user": { "id": 1, "user": "admin" }, "amount": "450000.0", "date": "2026-09-01" }
   ],
   "consumption_by_category": [
-    { "category": "Limpieza", "total": "25000.0" },
-    { "category": "Supermercado", "total": "13101.0" }
+    { "category": "Limpieza", "total": "25000.0", "planned": "30000.0" },
+    { "category": "Supermercado", "total": "13101.0", "planned": "0.0" }
   ],
   "monthly_savings": [
     { "month": "2026-09", "income": "450000.0", "consumption": "38101.0", "savings": "411899.0", "accumulated": "411899.0" }
@@ -341,7 +341,7 @@ curl http://localhost:3000/api/v1/dashboard -H "Authorization: Bearer <TOKEN>"
 | `income`, `consumption`, `savings` | totales del mes. `savings = income - consumption`; puede ser negativo si se gastó más de lo que se ganó |
 | `savings_goal_percentage` | entero de 0 a 100, nunca `null`. Para un usuario recién registrado vale `0` |
 | `incomes` | los ingresos del mes, del más antiguo al más reciente. Cada uno trae `id`, `user` (objeto `{ "id", "user" }`, igual que en el resto de la API), `amount` y `date` |
-| `consumption_by_category` | el consumo del mes agrupado por nombre de categoría. **No tiene un orden garantizado**: el front lo ordena como necesite |
+| `consumption_by_category` | el consumo del mes (`total`) y lo planificado (`planned`, suma de la lista de gastos fijos del mes) agrupado por nombre de categoría. Una categoría solo planificada trae `total` en `0.0`. **No tiene un orden garantizado**: el front lo ordena como necesite |
 | `monthly_savings` | los últimos 6 meses, del más antiguo al más reciente |
 | `monthly_savings[].accumulated` | ahorro acumulado: la suma corrida de `savings` dentro de esos 6 meses. El primer mes de la lista parte de 0, así que **no** es el ahorro de toda la vida |
 
