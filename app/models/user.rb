@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :expenses, dependent: :destroy
   has_many :incomes, dependent: :destroy
 
+  normalizes :user, with: ->(value) { value.to_s.strip.downcase }
   normalizes :email, with: ->(email) { email.strip.downcase }
 
   validates :user, presence: true, uniqueness: true

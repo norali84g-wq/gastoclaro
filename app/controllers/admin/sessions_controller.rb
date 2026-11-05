@@ -5,8 +5,8 @@ class Admin::SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(user: params[:user], admin: true)
-    if user&.authenticate(params[:password])
+    user = User.authenticate_by(user: params[:user].to_s, password: params[:password].to_s, admin: true)
+    if user
       session[:admin_user_id] = user.id
       redirect_to admin_root_path, notice: "Bienvenido, #{user.user}"
     else
