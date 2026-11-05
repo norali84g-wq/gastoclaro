@@ -1,6 +1,10 @@
 Rails.application.routes.draw do
   mount LetterOpenerWeb::Engine, at: "/letter_opener" if Rails.env.development?
 
+  # Documentación de la API (Swagger UI y especificación OpenAPI)
+  mount Rswag::Ui::Engine => "/api-docs"
+  mount Rswag::Api::Engine => "/api-docs"
+
   get "panel", to: "panel#show"
   namespace :admin do
   resources :expenses

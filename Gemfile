@@ -77,3 +77,7 @@ gem "rack-cors", "~> 3.0"
 
 # image_processing 2.x no incluye ruby-vips; Active Storage lo necesita
 gem "ruby-vips", "~> 2.0"
+
+# Documentación de la API (OpenAPI) servida con Swagger UI en /api-docs
+gem "rswag-api", "~> 2.17"
+gem "rswag-ui", "~> 2.17"

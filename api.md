@@ -2,6 +2,8 @@
 
 **Versión:** 0.2 · **Autora:** Norali · **Base URL:** `/api/v1` · **Formato:** JSON
 
+Esta misma API está documentada de forma interactiva en Swagger UI, en `/api-docs` (por ejemplo, `http://localhost:3000/api-docs`). La especificación está en [`swagger/v1/openapi.yaml`](swagger/v1/openapi.yaml).
+
 Este documento es el acuerdo entre el back-end (Rails) y el front-end (React). Lo que está acá es lo que el front puede usar. Si hay que cambiar algo, se cambia acá primero y se avisa por Trello.
 
 ## Estado de cada endpoint

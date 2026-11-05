@@ -97,6 +97,18 @@ Lo básico para empezar:
 4. Los errores (`400`, `401`, `403`, `404` y `422`) tienen todos la misma forma: `{ "errors": [ { "field": "...", "message": "..." } ] }`. Los textos están en `config/locales/es.yml`.
 5. En `api.md` cada endpoint indica su estado (`existe`, `cambia` o `falta`).
 
+### Documentación interactiva (Swagger UI)
+
+La API también está documentada en formato OpenAPI y se puede explorar y probar desde el navegador. Con el servidor levantado (`bin/rails server`), abrí [http://localhost:3000/api-docs](http://localhost:3000/api-docs) (si tu navegador no te redirige, usá `/api-docs/index.html`).
+
+Para probar un endpoint protegido:
+
+1. Abrí `POST /login`, tocá **Try it out**, completá `user` y `password` (por ejemplo `demo` / `demo1234`) y ejecutalo. Copiá el valor de `token` de la respuesta.
+2. Tocá el botón **Authorize** (arriba a la derecha), pegá el token (sin escribir `Bearer`) y confirmá.
+3. Ya podés ejecutar cualquier endpoint protegido, por ejemplo `GET /dashboard`.
+
+La especificación está en [`swagger/v1/openapi.yaml`](swagger/v1/openapi.yaml). Se escribe a mano y es un resumen navegable de `api.md`, que sigue siendo la fuente del contrato: si cambia una ruta o un campo, se actualizan los dos. El test `test/docs/openapi_spec_test.rb` avisa si una ruta de la API no está documentada o si la documentación nombra una ruta que no existe.
+
 Con la base cargada con `db:seed`, se puede probar entrando con `demo` / `demo1234` (ver [Datos de prueba](#datos-de-prueba-y-credenciales-de-demostración)).
 
 ## Modelo de datos
