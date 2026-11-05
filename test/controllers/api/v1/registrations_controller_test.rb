@@ -101,4 +101,22 @@ class Api::V1::RegistrationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
   end
+
+  test "el registro guarda el nombre de usuario en minusculas y sin espacios" do
+    post "/api/v1/register", params: valid_params.merge(user: "  NuevaPersona "), as: :json
+
+    assert_response :created
+    assert_equal "nuevapersona", response.parsed_body["user"]["user"]
+  end
+
+  test "el registro rechaza un nombre que solo cambia en mayusculas con 422 y el formato de error unico" do
+    crear_usuario_existente
+
+    assert_no_difference "User.count" do
+      post "/api/v1/register", params: valid_params.merge(user: "Existente"), as: :json
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "user", response.parsed_body["errors"].first["field"]
+  end
 end

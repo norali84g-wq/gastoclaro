@@ -230,9 +230,11 @@ Cada recurso se define una sola vez acá; los endpoints lo referencian por su no
 
 Público. Devuelve el token, cuándo vence y los datos del usuario (la misma forma que `GET /me`).
 
+El nombre de usuario no distingue mayúsculas de minúsculas ni espacios al principio o al final (`demo`, `Demo` y ` DEMO ` son el mismo usuario). La contraseña sí distingue mayúsculas.
+
 | Campo | Tipo | Obligatorio | Validación |
 |-------|------|:-----------:|------------|
-| `user` | string | Sí | nombre de usuario |
+| `user` | string | Sí | nombre de usuario (se guarda en minúsculas y sin espacios alrededor) |
 | `password` | string | Sí | — |
 
 ```bash
