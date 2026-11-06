@@ -75,6 +75,14 @@ class OpenapiSpecTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "swagger-ui"
   end
 
+  test "Swagger UI does not load anything from the internet" do
+    get "/api-docs/index.html"
+
+    assert_response :success
+    assert_no_match(/(?:href|src)=["']https?:\/\//, response.body)
+    assert_includes response.body, '"validatorUrl":null'
+  end
+
   private
 
   # Lista de [método, ruta completa, operación] tomada del YAML.
