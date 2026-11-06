@@ -1,0 +1,1867 @@
+openapi: 3.0.1
+info:
+  title: API de GastoClaro
+  version: v1
+  description: |
+    API JSON del back-end de GastoClaro (gestión de gastos personales).
+
+    El contrato completo, con ejemplos para `curl`, está en `api.md`. Esta
+    documentación lo describe en formato OpenAPI para poder explorarlo y
+    probarlo desde Swagger UI.
+
+    **Cómo probar los endpoints protegidos**
+
+    1. Ejecutá `POST /login` con un usuario y contraseña (por ejemplo, los de
+       demostración que figuran en el README) y copiá el valor de `token`.
+    2. Tocá el botón **Authorize**, pegá el token (sin escribir `Bearer`) y
+       confirmá.
+    3. Los pedidos siguientes envían `Authorization: Bearer <TOKEN>`.
+
+    El token vence a las 24 horas. `DELETE /logout` lo invalida antes.
+
+    **Reglas generales**
+
+    - Montos: se devuelven como string decimal (`"450000.0"`) y se aceptan como número.
+    - Fechas `YYYY-MM-DD`; períodos `YYYY-MM`.
+    - Cada usuario ve solo lo suyo; el administrador ve los datos de todos.
+    - Un recurso de otro usuario responde `404`, no `403`.
+    - Todos los errores tienen la forma `{ "errors": [ { "field": "...", "message": "..." } ] }`.
+servers:
+  - url: /api/v1
+    description: Servidor actual
+security:
+  - bearerAuth: []
+tags:
+  - name: Autenticación
+    description: Inicio y cierre de sesión, registro y usuario actual.
+  - name: Dashboard
+    description: Resumen del mes en curso.
+  - name: Ahorro
+    description: Ahorro mes a mes.
+  - name: Estadísticas
+    description: Consumo, ahorro y gasto hormiga por año o por mes.
+  - name: Categorías
+    description: Categorías compartidas por todos los usuarios. Crear, editar y borrar es solo para el administrador.
+  - name: Gastos
+    description: Gastos del usuario, con detalle opcional por ítem.
+  - name: Ingresos
+    description: Ingresos del usuario.
+  - name: Metas de ahorro
+    description: Metas del grupo familiar. El aporte de ahorro no es consumo.
+  - name: Compras en cuotas
+    description: Compras del grupo familiar. Las cuotas no crean consumo.
+  - name: Gastos fijos
+    description: Lo planificado de cada mes, por categoría.
+  - name: Usuarios
+    description: Listado de usuarios (solo administrador).
+
+paths:
+  /login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión
+      description: |
+        Público. Devuelve el token, cuándo vence y los datos del usuario.
+
+        El nombre de usuario no distingue mayúsculas de minúsculas ni espacios
+        al principio o al final. La contraseña sí distingue mayúsculas.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Usuario o contraseña incorrectos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errors:
+                  - field: base
+                    message: Usuario o contraseña incorrectos
+
+  /logout:
+    delete:
+      tags: [Autenticación]
+      summary: Cerrar sesión
+      description: Invalida el token usado y cualquier otro emitido antes para ese usuario (cierra la sesión en todos los dispositivos).
+      operationId: logout
+      responses:
+        "204":
+          description: Sesión cerrada. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /register:
+    post:
+      tags: [Autenticación]
+      summary: Registrar una cuenta
+      description: Público. Crea una cuenta de usuario común y devuelve su token. Si el pedido incluye `admin` o `family_group_id`, se ignoran.
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Cuenta creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /me:
+    get:
+      tags: [Autenticación]
+      summary: Usuario actual
+      description: Devuelve el usuario del token. Sirve para saber quién está logueado y si es administrador al recargar la página.
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: El usuario del token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Resumen del mes en curso
+      description: Resumen del mes en curso del usuario (el administrador ve el de todos). Siempre se cumple `income = consumption + savings`.
+      operationId: getDashboard
+      responses:
+        "200":
+          description: Resumen del mes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /savings:
+    get:
+      tags: [Ahorro]
+      summary: Ahorro mes a mes
+      description: El ahorro mes a mes desde el primer movimiento hasta el mes en curso (no incluye meses futuros). El administrador ve el de todos.
+      operationId: getSavings
+      responses:
+        "200":
+          description: Ahorro por mes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Savings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /statistics:
+    get:
+      tags: [Estadísticas]
+      summary: Estadísticas de un año o de un mes
+      description: |
+        Consumo, ahorro y gasto hormiga mes a mes, consumo por categoría y
+        detalle del gasto hormiga. **Gasto hormiga:** un producto que se
+        compró y no estaba en la lista de gastos fijos de ese mes. El
+        administrador ve las estadísticas de todos.
+      operationId: getStatistics
+      parameters:
+        - name: year
+          in: query
+          required: false
+          description: Año, de 2000 al año en curso. Si falta, se usa el año en curso.
+          schema:
+            type: integer
+            minimum: 2000
+            example: 2026
+        - name: month
+          in: query
+          required: false
+          description: Mes (1 a 12). Acota `by_category` y `unplanned` a ese mes.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 9
+      responses:
+        "200":
+          description: Estadísticas del período.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /categories:
+    get:
+      tags: [Categorías]
+      summary: Listar categorías
+      description: Lista todas las categorías (son globales), ordenadas por nombre.
+      operationId: listCategories
+      responses:
+        "200":
+          description: Lista de categorías.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Categorías]
+      summary: Crear una categoría
+      description: Solo administrador (las categorías son compartidas por todos los usuarios).
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Categoría creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Categorías]
+      summary: Editar una categoría
+      description: |
+        Solo administrador. Acepta los mismos campos que al crear, todos
+        opcionales. Una categoría no puede ser su propio padre ni colgar de
+        una de sus subcategorías (`422` en `parent_id`).
+      operationId: updateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Categoría actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Categorías]
+      summary: Borrar una categoría
+      description: Solo administrador. Borra una categoría **sin uso**. Responde `422` si tiene gastos, compras en cuotas, gastos fijos o subcategorías.
+      operationId: deleteCategory
+      responses:
+        "204":
+          description: Categoría borrada. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /categories/{id}/comparison:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Categorías]
+      summary: Comparar lo estimado con lo real
+      description: |
+        Compara lo **estimado** (la lista de gastos fijos del mes) con lo
+        **real** (los gastos del usuario; el administrador ve los de todos)
+        de una categoría en un mes.
+
+        Si la categoría no tiene subcategorías, trae una fila por producto en
+        `items` y `subcategories` vacío. Si tiene subcategorías, trae una fila
+        por subcategoría en `subcategories` e `items` vacío.
+      operationId: getCategoryComparison
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Mes a comparar. Si falta, se usa el mes en curso.
+          schema:
+            $ref: "#/components/schemas/Period"
+      responses:
+        "200":
+          description: Comparación del mes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryComparison"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /expenses:
+    get:
+      tags: [Gastos]
+      summary: Listar gastos
+      description: |
+        Gastos del usuario, del más reciente al más antiguo (el administrador
+        ve los de todos).
+
+        La respuesta tiene un tope de **100 gastos**, sin paginación. Si hay
+        más, devuelve los 100 más recientes sin avisar: usá `period` para
+        acotar.
+      operationId: listExpenses
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Trae solo los gastos de ese mes. Si viene vacío se ignora. Si es inválido (por ejemplo `2026-13`), responde `422`.
+          schema:
+            $ref: "#/components/schemas/Period"
+      responses:
+        "200":
+          description: Lista de gastos.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: "#/components/schemas/Expense"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    post:
+      tags: [Gastos]
+      summary: Crear un gasto
+      description: |
+        El gasto queda a nombre del usuario del token. Si se envían ítems, el
+        servidor calcula `amount` como la suma de `quantity × unit_price`; si
+        llegaran los dos, gana el calculado.
+      operationId: createExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseInput"
+      responses:
+        "201":
+          description: Gasto creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /expenses/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Gastos]
+      summary: Editar un gasto
+      description: |
+        Acepta los mismos campos que al crear, todos opcionales. Solo se
+        modifica lo que se envía. El `user` del gasto no cambia nunca.
+
+        **Editar o borrar ítems.** Para modificar un ítem existente se envía
+        su `id` y también su `name`. Para borrarlo, su `id` con
+        `"_destroy": true`. Un ítem sin `id` se crea nuevo. Si el `id` de un
+        ítem no pertenece a ese gasto, responde `404`.
+
+        `amount` se recalcula con los ítems que quedan. Si se borran todos los
+        ítems, el gasto conserva el `amount` anterior; para fijar otro monto,
+        enviá también `amount` en el mismo pedido.
+      operationId: updateExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseUpdate"
+      responses:
+        "200":
+          description: Gasto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Gastos]
+      summary: Borrar un gasto
+      description: Borra un gasto y sus ítems.
+      operationId: deleteExpense
+      responses:
+        "204":
+          description: Gasto borrado. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /incomes:
+    get:
+      tags: [Ingresos]
+      summary: Listar ingresos
+      description: Ingresos del usuario, del más reciente al más antiguo (el administrador ve los de todos, por eso cada uno trae `user`).
+      operationId: listIncomes
+      responses:
+        "200":
+          description: Lista de ingresos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Income"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Ingresos]
+      summary: Crear un ingreso
+      description: El ingreso queda a nombre del usuario del token; cualquier `user_id` enviado se ignora.
+      operationId: createIncome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomeInput"
+      responses:
+        "201":
+          description: Ingreso creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Income"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /incomes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Ingresos]
+      summary: Editar un ingreso
+      description: Edita `amount` y/o `date`. Solo se modifica lo que se envía. El administrador puede editar los de todos.
+      operationId: updateIncome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomeUpdate"
+      responses:
+        "200":
+          description: Ingreso actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Income"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Ingresos]
+      summary: Borrar un ingreso
+      operationId: deleteIncome
+      responses:
+        "204":
+          description: Ingreso borrado. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /savings_goals:
+    get:
+      tags: [Metas de ahorro]
+      summary: Listar metas de ahorro
+      description: Metas del grupo familiar del usuario, de la más reciente a la más antigua. El administrador ve las de todos.
+      operationId: listSavingsGoals
+      responses:
+        "200":
+          description: Lista de metas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavingsGoal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Metas de ahorro]
+      summary: Crear una meta de ahorro
+      description: La meta queda en el grupo familiar del usuario; cualquier `family_group_id` enviado se ignora.
+      operationId: createSavingsGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsGoalInput"
+      responses:
+        "201":
+          description: Meta creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsGoal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /savings_goals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Metas de ahorro]
+      summary: Editar una meta de ahorro
+      description: Acepta los mismos campos que al crear, todos opcionales. A diferencia del back-office, la API no envía el mail de felicitación al cumplir una meta.
+      operationId: updateSavingsGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsGoalUpdate"
+      responses:
+        "200":
+          description: Meta actualizada, con `progress_percentage` recalculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsGoal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Metas de ahorro]
+      summary: Borrar una meta de ahorro
+      operationId: deleteSavingsGoal
+      responses:
+        "204":
+          description: Meta borrada. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /installment_purchases:
+    get:
+      tags: [Compras en cuotas]
+      summary: Listar compras en cuotas
+      description: Compras del grupo familiar del usuario, de la más reciente a la más antigua. El administrador ve todas.
+      operationId: listInstallmentPurchases
+      responses:
+        "200":
+          description: Lista de compras en cuotas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InstallmentPurchase"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Compras en cuotas]
+      summary: Crear una compra en cuotas
+      description: Las cuotas **no se suman al consumo mensual** ni cambian el `consumption` del dashboard ni de las estadísticas. Si hay varios campos inválidos, la API los devuelve todos juntos en el `422`.
+      operationId: createInstallmentPurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstallmentPurchaseInput"
+      responses:
+        "201":
+          description: Compra creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstallmentPurchase"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /installment_purchases/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Compras en cuotas]
+      summary: Editar una compra en cuotas
+      description: Acepta los mismos campos que al crear, todos opcionales. Las cuotas **no se suman al consumo mensual** ni cambian el `consumption` del dashboard ni de las estadísticas.
+      operationId: updateInstallmentPurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstallmentPurchaseUpdate"
+      responses:
+        "200":
+          description: Compra actualizada, con `installment_amount` y `remaining_installments` recalculados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstallmentPurchase"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Compras en cuotas]
+      summary: Borrar una compra en cuotas
+      operationId: deleteInstallmentPurchase
+      responses:
+        "204":
+          description: Compra borrada. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /shopping_list_items:
+    get:
+      tags: [Gastos fijos]
+      summary: Listar ítems de la lista de gastos fijos
+      description: Ítems del grupo familiar del usuario, ordenados por mes y nombre. El administrador ve los de todos.
+      operationId: listShoppingListItems
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Trae solo los ítems de ese mes.
+          schema:
+            $ref: "#/components/schemas/Period"
+      responses:
+        "200":
+          description: Lista de ítems.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShoppingListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Gastos fijos]
+      summary: Crear un ítem de la lista de gastos fijos
+      description: El ítem queda en el grupo familiar del usuario; cualquier `family_group_id` enviado se ignora.
+      operationId: createShoppingListItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingListItemInput"
+      responses:
+        "201":
+          description: Ítem creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /shopping_list_items/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Gastos fijos]
+      summary: Editar un ítem de la lista de gastos fijos
+      description: Acepta los mismos campos que al crear, todos opcionales.
+      operationId: updateShoppingListItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingListItemUpdate"
+      responses:
+        "200":
+          description: Ítem actualizado, con `subtotal` recalculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Gastos fijos]
+      summary: Borrar un ítem de la lista de gastos fijos
+      operationId: deleteShoppingListItem
+      responses:
+        "204":
+          description: Ítem borrado. Sin cuerpo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios
+      description: Solo administrador. No devuelve contraseñas ni tokens.
+      operationId: listUsers
+      responses:
+        "200":
+          description: Lista de usuarios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token que devuelve `POST /login` o `POST /register`. Vence a las 24 horas.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador del recurso (entero positivo). Si no existe o es de otro usuario, responde `404`.
+      schema:
+        type: integer
+        minimum: 1
+        example: 1
+
+  responses:
+    Unauthorized:
+      description: Falta el token, es inválido, venció o se cerró la sesión.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            errors:
+              - field: base
+                message: No autorizado
+    Forbidden:
+      description: El usuario no tiene permiso (por ejemplo, no es administrador).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            errors:
+              - field: base
+                message: Acceso denegado
+    NotFound:
+      description: El recurso no existe o es de otro usuario.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            errors:
+              - field: base
+                message: No encontrado
+    UnprocessableEntity:
+      description: Datos de entrada inválidos. Trae todos los errores de validación juntos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            errors:
+              - field: amount
+                message: debe ser mayor a 0
+
+  schemas:
+    # --- Tipos básicos y errores ---
+    Decimal:
+      type: string
+      description: Monto o cantidad decimal, como texto.
+      example: "450000.0"
+    Period:
+      type: string
+      description: Mes en formato `YYYY-MM`.
+      pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+      example: "2026-09"
+    Date:
+      type: string
+      format: date
+      description: Fecha en formato `YYYY-MM-DD`.
+      example: "2026-09-01"
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorItem"
+    ErrorItem:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          description: Campo con el problema, o `base` si el error es general.
+          example: amount
+        message:
+          type: string
+          description: Mensaje en español, apto para mostrar al usuario.
+          example: debe ser mayor a 0
+    UserRef:
+      type: object
+      required: [id, user]
+      properties:
+        id:
+          type: integer
+          example: 1
+        user:
+          type: string
+          example: admin
+    CategoryRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Supermercado
+
+    # --- Autenticación y usuarios ---
+    LoginRequest:
+      type: object
+      required: [user, password]
+      properties:
+        user:
+          type: string
+          description: Nombre de usuario (no distingue mayúsculas ni espacios en los extremos).
+          example: demo
+        password:
+          type: string
+          format: password
+          description: Contraseña (distingue mayúsculas).
+          example: demo1234
+    RegisterRequest:
+      type: object
+      required: [user, email, password, password_confirmation]
+      properties:
+        user:
+          type: string
+          description: Nombre de usuario. Único.
+          example: prueba1
+        email:
+          type: string
+          format: email
+          description: Email con formato válido. Único (sin distinguir mayúsculas).
+          example: prueba1@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: clave1234
+        password_confirmation:
+          type: string
+          format: password
+          description: Igual a `password`.
+          example: clave1234
+    AuthSession:
+      type: object
+      required: [token, expires_at, user]
+      properties:
+        token:
+          type: string
+          description: JWT para enviar en `Authorization`.
+          example: eyJhbGciOiJIUzI1NiJ9...
+        expires_at:
+          type: string
+          format: date-time
+          description: Cuándo vence el token (ISO 8601, UTC).
+          example: "2026-10-27T06:14:00Z"
+        user:
+          $ref: "#/components/schemas/User"
+    User:
+      type: object
+      required: [id, user, email, admin]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 5
+        user:
+          type: string
+          example: prueba1
+        email:
+          type: string
+          nullable: true
+          description: El administrador del seed no tiene email.
+          example: prueba1@example.com
+        admin:
+          type: boolean
+          description: Sirve solo para decidir qué mostrar; los permisos los controla siempre la API.
+          example: false
+
+    # --- Dashboard, ahorro y estadísticas ---
+    Dashboard:
+      type: object
+      required: [period, income, consumption, savings, savings_goal_percentage, incomes, consumption_by_category, monthly_savings]
+      properties:
+        period:
+          $ref: "#/components/schemas/Period"
+        income:
+          $ref: "#/components/schemas/Decimal"
+        consumption:
+          $ref: "#/components/schemas/Decimal"
+        savings:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: "`income - consumption`; puede ser negativo."
+        savings_goal_percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Nunca es `null`; para un usuario recién registrado vale `0`.
+          example: 10
+        incomes:
+          type: array
+          description: Ingresos del mes, del más antiguo al más reciente.
+          items:
+            $ref: "#/components/schemas/Income"
+        consumption_by_category:
+          type: array
+          description: Consumo del mes y lo planificado, por categoría. No tiene un orden garantizado.
+          items:
+            $ref: "#/components/schemas/ConsumptionByCategory"
+        monthly_savings:
+          type: array
+          description: Los últimos 6 meses, del más antiguo al más reciente.
+          items:
+            $ref: "#/components/schemas/MonthlySavings"
+      example:
+        period: "2026-09"
+        income: "450000.0"
+        consumption: "300000.0"
+        savings: "150000.0"
+        savings_goal_percentage: 10
+        incomes:
+          - id: 1
+            amount: "450000.0"
+            date: "2026-09-01"
+            user:
+              id: 1
+              user: demo
+        consumption_by_category:
+          - category_id: 1
+            category: Supermercado
+            total: "180000.0"
+            planned: "200000.0"
+          - category_id: 3
+            category: Vivienda
+            total: "90000.0"
+            planned: "90000.0"
+          - category_id: 2
+            category: Limpieza
+            total: "30000.0"
+            planned: "30000.0"
+        monthly_savings:
+          - month: "2026-04"
+            income: "400000.0"
+            consumption: "280000.0"
+            savings: "120000.0"
+            accumulated: "120000.0"
+          - month: "2026-05"
+            income: "420000.0"
+            consumption: "300000.0"
+            savings: "120000.0"
+            accumulated: "240000.0"
+          - month: "2026-06"
+            income: "420000.0"
+            consumption: "330000.0"
+            savings: "90000.0"
+            accumulated: "330000.0"
+          - month: "2026-07"
+            income: "430000.0"
+            consumption: "310000.0"
+            savings: "120000.0"
+            accumulated: "450000.0"
+          - month: "2026-08"
+            income: "450000.0"
+            consumption: "320000.0"
+            savings: "130000.0"
+            accumulated: "580000.0"
+          - month: "2026-09"
+            income: "450000.0"
+            consumption: "300000.0"
+            savings: "150000.0"
+            accumulated: "730000.0"
+    ConsumptionByCategory:
+      type: object
+      required: [category_id, category, total, planned]
+      properties:
+        category_id:
+          type: integer
+          example: 2
+        category:
+          type: string
+          description: Nombre de la categoría.
+          example: Limpieza
+        total:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Consumo real del mes (`0.0` si la categoría solo está planificada).
+          example: "25000.0"
+        planned:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          readOnly: true
+          description: Suma de la lista de gastos fijos del mes.
+          example: "30000.0"
+    MonthlySavings:
+      type: object
+      required: [month, income, consumption, savings, accumulated]
+      properties:
+        month:
+          $ref: "#/components/schemas/Period"
+        income:
+          $ref: "#/components/schemas/Decimal"
+        consumption:
+          $ref: "#/components/schemas/Decimal"
+        savings:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: "`income - consumption`; puede ser negativo."
+        accumulated:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Suma corrida de `savings` desde el primer mes de la lista (no es el ahorro de toda la vida).
+    Savings:
+      type: object
+      required: [savings_goal_percentage, months]
+      properties:
+        savings_goal_percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 10
+        months:
+          type: array
+          description: Del mes más antiguo al más reciente; `[]` si todavía no hay ingresos ni gastos.
+          items:
+            $ref: "#/components/schemas/MonthlySavings"
+      example:
+        savings_goal_percentage: 10
+        months:
+          - month: "2026-04"
+            income: "400000.0"
+            consumption: "280000.0"
+            savings: "120000.0"
+            accumulated: "120000.0"
+          - month: "2026-05"
+            income: "420000.0"
+            consumption: "300000.0"
+            savings: "120000.0"
+            accumulated: "240000.0"
+          - month: "2026-06"
+            income: "420000.0"
+            consumption: "330000.0"
+            savings: "90000.0"
+            accumulated: "330000.0"
+          - month: "2026-07"
+            income: "430000.0"
+            consumption: "310000.0"
+            savings: "120000.0"
+            accumulated: "450000.0"
+          - month: "2026-08"
+            income: "450000.0"
+            consumption: "320000.0"
+            savings: "130000.0"
+            accumulated: "580000.0"
+          - month: "2026-09"
+            income: "450000.0"
+            consumption: "300000.0"
+            savings: "150000.0"
+            accumulated: "730000.0"
+    Statistics:
+      type: object
+      required: [year, month, available_years, months, by_category, unplanned]
+      properties:
+        year:
+          type: integer
+          example: 2026
+        month:
+          type: integer
+          nullable: true
+          description: Mes pedido, o `null` si se pidió el año completo.
+          example: 9
+        available_years:
+          type: array
+          description: Del año del primer movimiento al año en curso, del más reciente al más antiguo.
+          items:
+            type: integer
+          example: [2026, 2025]
+        months:
+          type: array
+          description: Todos los meses del año (hasta el mes en curso si es el año en curso), aunque se pase `month`.
+          items:
+            $ref: "#/components/schemas/StatisticsMonth"
+        by_category:
+          type: array
+          description: Consumo del período por categoría principal, de mayor a menor.
+          items:
+            $ref: "#/components/schemas/StatisticsCategory"
+        unplanned:
+          $ref: "#/components/schemas/Unplanned"
+    StatisticsMonth:
+      type: object
+      required: [month, income, consumption, savings, unplanned]
+      properties:
+        month:
+          $ref: "#/components/schemas/Period"
+        income:
+          $ref: "#/components/schemas/Decimal"
+        consumption:
+          $ref: "#/components/schemas/Decimal"
+        savings:
+          $ref: "#/components/schemas/Decimal"
+        unplanned:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Gasto hormiga del mes.
+    StatisticsCategory:
+      type: object
+      required: [category, total, percentage, subcategories]
+      properties:
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        total:
+          $ref: "#/components/schemas/Decimal"
+        percentage:
+          type: number
+          description: Parte del consumo total del período, redondeada a un decimal.
+          example: 66.7
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubcategoryComparison"
+    SubcategoryComparison:
+      type: object
+      required: [category, planned, real, over_budget]
+      properties:
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        real:
+          $ref: "#/components/schemas/Decimal"
+        planned:
+          $ref: "#/components/schemas/Decimal"
+        over_budget:
+          type: boolean
+          description: "`true` si hay algo planificado y lo real lo supera."
+        percentage:
+          type: number
+          description: Solo en `GET /statistics`.
+          example: 50.0
+    Unplanned:
+      type: object
+      required: [total, by_vendor, items]
+      properties:
+        total:
+          $ref: "#/components/schemas/Decimal"
+        by_vendor:
+          type: array
+          description: Gasto hormiga por comercio, de mayor a menor.
+          items:
+            type: object
+            required: [vendor, total]
+            properties:
+              vendor:
+                type: string
+                nullable: true
+                description: "`null` si el gasto no tiene comercio."
+                example: Coto
+              total:
+                $ref: "#/components/schemas/Decimal"
+        items:
+          type: array
+          description: Productos del gasto hormiga, del más antiguo al más reciente.
+          items:
+            type: object
+            required: [name, quantity, unit_price, subtotal, date, category_id, vendor]
+            properties:
+              name:
+                type: string
+                example: Cafe
+              quantity:
+                type: integer
+                example: 2
+              unit_price:
+                $ref: "#/components/schemas/Decimal"
+              subtotal:
+                $ref: "#/components/schemas/Decimal"
+              date:
+                $ref: "#/components/schemas/Date"
+              category_id:
+                type: integer
+                example: 4
+              vendor:
+                type: string
+                nullable: true
+                example: Coto
+
+    # --- Categorías ---
+    Category:
+      type: object
+      required: [id, name, parent_id, tracks_installments]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 3
+        name:
+          type: string
+          example: Supermercado
+        parent_id:
+          type: integer
+          nullable: true
+          description: Id de la categoría padre; `null` si es una categoría principal.
+          example: 1
+        tracks_installments:
+          type: boolean
+          nullable: true
+          description: "`null` si no se indicó."
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Tarjetas de crédito
+        parent_id:
+          type: integer
+          description: Tiene que ser una categoría que exista.
+          example: 1
+      example:
+        name: Tarjetas de crédito
+    CategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Supermercado
+        parent_id:
+          type: integer
+          description: Tiene que ser una categoría que exista.
+          example: 1
+      example:
+        name: Supermercado
+    CategoryComparison:
+      type: object
+      required: [category, period, planned_total, real_total, subcategories, items]
+      properties:
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        period:
+          $ref: "#/components/schemas/Period"
+        planned_total:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Suma de la lista de gastos fijos del mes (de las subcategorías, si tiene).
+        real_total:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Suma de los gastos del mes de esa categoría (de las subcategorías, si tiene).
+        subcategories:
+          type: array
+          description: Una fila por subcategoría, por nombre. Vacío si la categoría no tiene subcategorías.
+          items:
+            $ref: "#/components/schemas/SubcategoryComparison"
+        items:
+          type: array
+          description: Una fila por producto. Vacío si la categoría tiene subcategorías.
+          items:
+            $ref: "#/components/schemas/ComparisonItem"
+    ComparisonItem:
+      type: object
+      required: [name, planned_quantity, planned_unit_price, planned_total, real_quantity, real_unit_price, real_total, status]
+      description: Los productos se emparejan por nombre, sin importar mayúsculas ni espacios en los extremos.
+      properties:
+        name:
+          type: string
+          example: Arroz
+        planned_quantity:
+          $ref: "#/components/schemas/Decimal"
+        planned_unit_price:
+          $ref: "#/components/schemas/Decimal"
+        planned_total:
+          $ref: "#/components/schemas/Decimal"
+        real_quantity:
+          type: integer
+          example: 3
+        real_unit_price:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Precio promedio de lo comprado.
+        real_total:
+          $ref: "#/components/schemas/Decimal"
+        status:
+          type: string
+          enum: [bought, unplanned, not_bought]
+          description: |
+            `bought`: estaba planificado y se compró. `unplanned`: se compró y
+            no estaba planificado (gasto hormiga). `not_bought`: estaba
+            planificado y no se compró.
+
+    # --- Gastos ---
+    Expense:
+      type: object
+      required: [id, amount, date, description, is_fixed, purchase_channel, user, vendor_id, category, expense_items]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 2
+        amount:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Monto total. Si hay ítems, es la suma de sus `subtotal`.
+          example: "13101.0"
+        date:
+          $ref: "#/components/schemas/Date"
+        description:
+          type: string
+          nullable: true
+          example: Compra semanal
+        is_fixed:
+          type: boolean
+          description: "`true` si es un gasto fijo."
+        purchase_channel:
+          $ref: "#/components/schemas/PurchaseChannel"
+        user:
+          allOf:
+            - $ref: "#/components/schemas/UserRef"
+          readOnly: true
+        vendor_id:
+          type: integer
+          nullable: true
+          description: El front lo ignora. Puede traer valor si el gasto se cargó desde el panel de administración.
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        expense_items:
+          type: array
+          description: Puede venir vacío.
+          items:
+            $ref: "#/components/schemas/ExpenseItem"
+    PurchaseChannel:
+      type: string
+      enum: [presencial, delivery, retiro]
+      example: presencial
+    ExpenseUnit:
+      type: string
+      enum: [unidad, kg, g]
+      example: unidad
+    ExpenseItem:
+      type: object
+      required: [id, name, quantity, unit, unit_price, subtotal]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: Leche
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unit:
+          $ref: "#/components/schemas/ExpenseUnit"
+        unit_price:
+          $ref: "#/components/schemas/Decimal"
+        subtotal:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          readOnly: true
+          description: "`quantity × unit_price`."
+    ExpenseInput:
+      type: object
+      required: [date, category_id]
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        category_id:
+          type: integer
+          description: Tiene que existir.
+          example: 1
+        amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          description: Obligatorio si no hay ítems. Si se envían ítems, lo calcula el servidor.
+          example: 25000
+        description:
+          type: string
+          example: Productos de limpieza
+        vendor_id:
+          type: integer
+          description: No se usa en el TP2. Si se envía, tiene que existir.
+        is_fixed:
+          type: boolean
+          default: false
+        purchase_channel:
+          allOf:
+            - $ref: "#/components/schemas/PurchaseChannel"
+          default: presencial
+        expense_items_attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseItemInput"
+    ExpenseUpdate:
+      type: object
+      description: Todos los campos son opcionales. Solo se modifica lo que se envía.
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        category_id:
+          type: integer
+          example: 1
+        amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 13101
+        description:
+          type: string
+          example: Compra semanal
+        vendor_id:
+          type: integer
+          example: 1
+        is_fixed:
+          type: boolean
+          example: false
+        purchase_channel:
+          $ref: "#/components/schemas/PurchaseChannel"
+        expense_items_attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseItemUpdate"
+      example:
+        description: Compra semanal
+        is_fixed: false
+    ExpenseItemInput:
+      type: object
+      required: [name, unit_price]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Leche
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Entero mayor a 0. No admite decimales; para fracciones usá `g` (1,5 kg = `1500` con `unit` `g`).
+          example: 2
+        unit:
+          allOf:
+            - $ref: "#/components/schemas/ExpenseUnit"
+          default: unidad
+        unit_price:
+          type: number
+          minimum: 0
+          example: 1800.5
+    ExpenseItemUpdate:
+      type: object
+      description: |
+        Sin `id`, crea un ítem nuevo (requiere `name` y `unit_price`). Con
+        `id`, modifica ese ítem (hay que enviar también `name`). Con `id` y
+        `"_destroy": true`, lo borra (no necesita `name`).
+      properties:
+        id:
+          type: integer
+          description: Id de un ítem de ese gasto. Si no le pertenece, responde `404`.
+          example: 1
+        name:
+          type: string
+          minLength: 1
+          example: Leche
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unit:
+          $ref: "#/components/schemas/ExpenseUnit"
+        unit_price:
+          type: number
+          minimum: 0
+          example: 1800.5
+        _destroy:
+          type: boolean
+          description: "`true` para borrar el ítem."
+          example: false
+
+    # --- Ingresos ---
+    Income:
+      type: object
+      required: [id, amount, date, user]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        amount:
+          $ref: "#/components/schemas/Decimal"
+        date:
+          $ref: "#/components/schemas/Date"
+        user:
+          $ref: "#/components/schemas/UserRef"
+    IncomeInput:
+      type: object
+      required: [amount, date]
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 450000
+        date:
+          $ref: "#/components/schemas/Date"
+    IncomeUpdate:
+      type: object
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 460000
+        date:
+          $ref: "#/components/schemas/Date"
+      example:
+        amount: 460000
+
+    # --- Metas de ahorro ---
+    SavingsGoal:
+      type: object
+      required: [id, name, target_amount, saved_amount, deadline, progress_percentage]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: Viaje
+        target_amount:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Monto que se quiere juntar.
+          example: "1000.0"
+        saved_amount:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          description: Monto ahorrado hasta ahora.
+          example: "250.0"
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha límite, si la hay.
+        progress_percentage:
+          type: integer
+          readOnly: true
+          description: Calculado, no se guarda. `saved_amount / target_amount × 100`, redondeado. Puede superar `100`.
+          example: 25
+    SavingsGoalInput:
+      type: object
+      required: [name, target_amount]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Notebook
+        target_amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 800
+        saved_amount:
+          type: number
+          minimum: 0
+          default: 0
+        deadline:
+          type: string
+          format: date
+          example: "2027-03-01"
+    SavingsGoalUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Notebook
+        target_amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 800
+        saved_amount:
+          type: number
+          minimum: 0
+          example: 500
+        deadline:
+          type: string
+          format: date
+          example: "2027-03-01"
+      example:
+        saved_amount: 500
+
+    # --- Compras en cuotas ---
+    InstallmentPurchase:
+      type: object
+      required: [id, description, total_amount, installments_count, first_period, category_id, vendor_id, installment_amount, remaining_installments]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        description:
+          type: string
+          example: Heladera
+        total_amount:
+          $ref: "#/components/schemas/Decimal"
+        installments_count:
+          type: integer
+          minimum: 1
+          maximum: 48
+          example: 12
+        first_period:
+          $ref: "#/components/schemas/Period"
+        category_id:
+          type: integer
+          example: 4
+        vendor_id:
+          type: integer
+          nullable: true
+        installment_amount:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          readOnly: true
+          description: Calculado. `total_amount / installments_count`, redondeado a 2 decimales.
+        remaining_installments:
+          type: integer
+          readOnly: true
+          minimum: 0
+          description: Calculado. Cuotas que todavía no vencieron. No cuenta la del mes en curso, que ya se considera paga (una compra de 1 cuota que empieza este mes tiene `0`; una de 12 tiene `11`). Nunca menos de `0`.
+    InstallmentPurchaseInput:
+      type: object
+      required: [description, total_amount, installments_count, first_period, category_id]
+      properties:
+        description:
+          type: string
+          minLength: 1
+          example: Televisor
+        total_amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 900
+        installments_count:
+          type: integer
+          minimum: 1
+          maximum: 48
+          example: 3
+        first_period:
+          $ref: "#/components/schemas/Period"
+        category_id:
+          type: integer
+          description: Tiene que existir.
+        vendor_id:
+          type: integer
+          description: Si se envía, tiene que existir.
+    InstallmentPurchaseUpdate:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+          example: Heladera
+        total_amount:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 900
+        installments_count:
+          type: integer
+          minimum: 1
+          maximum: 48
+          example: 6
+        first_period:
+          $ref: "#/components/schemas/Period"
+        category_id:
+          type: integer
+          example: 4
+        vendor_id:
+          type: integer
+          example: 1
+      example:
+        description: Heladera
+
+    # --- Gastos fijos ---
+    ShoppingListItem:
+      type: object
+      required: [id, name, period, quantity, estimated_unit_price, subtotal, category]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          description: Qué se planifica comprar o pagar.
+          example: Arroz
+        period:
+          $ref: "#/components/schemas/Period"
+        quantity:
+          type: string
+          nullable: true
+          description: Cantidad, como string decimal.
+          example: "2.0"
+        estimated_unit_price:
+          $ref: "#/components/schemas/Decimal"
+        subtotal:
+          allOf:
+            - $ref: "#/components/schemas/Decimal"
+          readOnly: true
+          description: Calculado, no se guarda. `quantity × estimated_unit_price` (`0` si no hay cantidad).
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+    ShoppingListItemInput:
+      type: object
+      required: [name, period, estimated_unit_price, category_id]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Fideos
+        period:
+          $ref: "#/components/schemas/Period"
+        quantity:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 3
+        estimated_unit_price:
+          type: number
+          minimum: 0
+          example: 800
+        category_id:
+          type: integer
+          description: Tiene que existir.
+    ShoppingListItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Fideos
+        period:
+          $ref: "#/components/schemas/Period"
+        quantity:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 3
+        estimated_unit_price:
+          type: number
+          minimum: 0
+          example: 800
+        category_id:
+          type: integer
+          example: 2
+      example:
+        quantity: 3
