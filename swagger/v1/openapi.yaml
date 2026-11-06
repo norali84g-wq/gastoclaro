@@ -925,6 +925,7 @@ components:
           type: string
           format: password
           description: Contraseña (distingue mayúsculas).
+          example: demo1234
     RegisterRequest:
       type: object
       required: [user, email, password, password_confirmation]
@@ -942,10 +943,12 @@ components:
           type: string
           format: password
           minLength: 8
+          example: clave1234
         password_confirmation:
           type: string
           format: password
           description: Igual a `password`.
+          example: clave1234
     AuthSession:
       type: object
       required: [token, expires_at, user]
@@ -967,6 +970,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 5
         user:
           type: string
@@ -1017,6 +1021,63 @@ components:
           description: Los últimos 6 meses, del más antiguo al más reciente.
           items:
             $ref: "#/components/schemas/MonthlySavings"
+      example:
+        period: "2026-09"
+        income: "450000.0"
+        consumption: "300000.0"
+        savings: "150000.0"
+        savings_goal_percentage: 10
+        incomes:
+          - id: 1
+            amount: "450000.0"
+            date: "2026-09-01"
+            user:
+              id: 1
+              user: demo
+        consumption_by_category:
+          - category_id: 1
+            category: Supermercado
+            total: "180000.0"
+            planned: "200000.0"
+          - category_id: 3
+            category: Vivienda
+            total: "90000.0"
+            planned: "90000.0"
+          - category_id: 2
+            category: Limpieza
+            total: "30000.0"
+            planned: "30000.0"
+        monthly_savings:
+          - month: "2026-04"
+            income: "400000.0"
+            consumption: "280000.0"
+            savings: "120000.0"
+            accumulated: "120000.0"
+          - month: "2026-05"
+            income: "420000.0"
+            consumption: "300000.0"
+            savings: "120000.0"
+            accumulated: "240000.0"
+          - month: "2026-06"
+            income: "420000.0"
+            consumption: "330000.0"
+            savings: "90000.0"
+            accumulated: "330000.0"
+          - month: "2026-07"
+            income: "430000.0"
+            consumption: "310000.0"
+            savings: "120000.0"
+            accumulated: "450000.0"
+          - month: "2026-08"
+            income: "450000.0"
+            consumption: "320000.0"
+            savings: "130000.0"
+            accumulated: "580000.0"
+          - month: "2026-09"
+            income: "450000.0"
+            consumption: "300000.0"
+            savings: "150000.0"
+            accumulated: "730000.0"
     ConsumptionByCategory:
       type: object
       required: [category_id, category, total, planned]
@@ -1036,6 +1097,7 @@ components:
         planned:
           allOf:
             - $ref: "#/components/schemas/Decimal"
+          readOnly: true
           description: Suma de la lista de gastos fijos del mes.
           example: "30000.0"
     MonthlySavings:
@@ -1070,6 +1132,39 @@ components:
           description: Del mes más antiguo al más reciente; `[]` si todavía no hay ingresos ni gastos.
           items:
             $ref: "#/components/schemas/MonthlySavings"
+      example:
+        savings_goal_percentage: 10
+        months:
+          - month: "2026-04"
+            income: "400000.0"
+            consumption: "280000.0"
+            savings: "120000.0"
+            accumulated: "120000.0"
+          - month: "2026-05"
+            income: "420000.0"
+            consumption: "300000.0"
+            savings: "120000.0"
+            accumulated: "240000.0"
+          - month: "2026-06"
+            income: "420000.0"
+            consumption: "330000.0"
+            savings: "90000.0"
+            accumulated: "330000.0"
+          - month: "2026-07"
+            income: "430000.0"
+            consumption: "310000.0"
+            savings: "120000.0"
+            accumulated: "450000.0"
+          - month: "2026-08"
+            income: "450000.0"
+            consumption: "320000.0"
+            savings: "130000.0"
+            accumulated: "580000.0"
+          - month: "2026-09"
+            income: "450000.0"
+            consumption: "300000.0"
+            savings: "150000.0"
+            accumulated: "730000.0"
     Statistics:
       type: object
       required: [year, month, available_years, months, by_category, unplanned]
@@ -1203,7 +1298,8 @@ components:
       properties:
         id:
           type: integer
-          example: 1
+          readOnly: true
+          example: 3
         name:
           type: string
           example: Supermercado
@@ -1211,6 +1307,7 @@ components:
           type: integer
           nullable: true
           description: Id de la categoría padre; `null` si es una categoría principal.
+          example: 1
         tracks_installments:
           type: boolean
           nullable: true
@@ -1226,15 +1323,22 @@ components:
         parent_id:
           type: integer
           description: Tiene que ser una categoría que exista.
+          example: 1
+      example:
+        name: Tarjetas de crédito
     CategoryUpdate:
       type: object
       properties:
         name:
           type: string
           minLength: 1
+          example: Supermercado
         parent_id:
           type: integer
           description: Tiene que ser una categoría que exista.
+          example: 1
+      example:
+        name: Supermercado
     CategoryComparison:
       type: object
       required: [category, period, planned_total, real_total, subcategories, items]
@@ -1299,6 +1403,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 2
         amount:
           allOf:
@@ -1317,7 +1422,9 @@ components:
         purchase_channel:
           $ref: "#/components/schemas/PurchaseChannel"
         user:
-          $ref: "#/components/schemas/UserRef"
+          allOf:
+            - $ref: "#/components/schemas/UserRef"
+          readOnly: true
         vendor_id:
           type: integer
           nullable: true
@@ -1343,6 +1450,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 1
         name:
           type: string
@@ -1358,6 +1466,7 @@ components:
         subtotal:
           allOf:
             - $ref: "#/components/schemas/Decimal"
+          readOnly: true
           description: "`quantity × unit_price`."
     ExpenseInput:
       type: object
@@ -1400,22 +1509,30 @@ components:
           $ref: "#/components/schemas/Date"
         category_id:
           type: integer
+          example: 1
         amount:
           type: number
           exclusiveMinimum: true
           minimum: 0
+          example: 13101
         description:
           type: string
+          example: Compra semanal
         vendor_id:
           type: integer
+          example: 1
         is_fixed:
           type: boolean
+          example: false
         purchase_channel:
           $ref: "#/components/schemas/PurchaseChannel"
         expense_items_attributes:
           type: array
           items:
             $ref: "#/components/schemas/ExpenseItemUpdate"
+      example:
+        description: Compra semanal
+        is_fixed: false
     ExpenseItemInput:
       type: object
       required: [name, unit_price]
@@ -1448,20 +1565,25 @@ components:
         id:
           type: integer
           description: Id de un ítem de ese gasto. Si no le pertenece, responde `404`.
+          example: 1
         name:
           type: string
           minLength: 1
+          example: Leche
         quantity:
           type: integer
           minimum: 1
+          example: 2
         unit:
           $ref: "#/components/schemas/ExpenseUnit"
         unit_price:
           type: number
           minimum: 0
+          example: 1800.5
         _destroy:
           type: boolean
           description: "`true` para borrar el ítem."
+          example: false
 
     # --- Ingresos ---
     Income:
@@ -1470,6 +1592,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 1
         amount:
           $ref: "#/components/schemas/Decimal"
@@ -1498,6 +1621,8 @@ components:
           example: 460000
         date:
           $ref: "#/components/schemas/Date"
+      example:
+        amount: 460000
 
     # --- Metas de ahorro ---
     SavingsGoal:
@@ -1506,6 +1631,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 1
         name:
           type: string
@@ -1557,10 +1683,12 @@ components:
         name:
           type: string
           minLength: 1
+          example: Notebook
         target_amount:
           type: number
           exclusiveMinimum: true
           minimum: 0
+          example: 800
         saved_amount:
           type: number
           minimum: 0
@@ -1568,6 +1696,9 @@ components:
         deadline:
           type: string
           format: date
+          example: "2027-03-01"
+      example:
+        saved_amount: 500
 
     # --- Compras en cuotas ---
     InstallmentPurchase:
@@ -1576,6 +1707,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 1
         description:
           type: string
@@ -1637,10 +1769,12 @@ components:
         description:
           type: string
           minLength: 1
+          example: Heladera
         total_amount:
           type: number
           exclusiveMinimum: true
           minimum: 0
+          example: 900
         installments_count:
           type: integer
           minimum: 1
@@ -1650,8 +1784,12 @@ components:
           $ref: "#/components/schemas/Period"
         category_id:
           type: integer
+          example: 4
         vendor_id:
           type: integer
+          example: 1
+      example:
+        description: Heladera
 
     # --- Gastos fijos ---
     ShoppingListItem:
@@ -1660,6 +1798,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 1
         name:
           type: string
@@ -1709,14 +1848,20 @@ components:
         name:
           type: string
           minLength: 1
+          example: Fideos
         period:
           $ref: "#/components/schemas/Period"
         quantity:
           type: number
           exclusiveMinimum: true
           minimum: 0
+          example: 3
         estimated_unit_price:
           type: number
           minimum: 0
+          example: 800
         category_id:
           type: integer
+          example: 2
+      example:
+        quantity: 3
