@@ -12,9 +12,6 @@ class OpenapiSpecTest < ActionDispatch::IntegrationTest
   # Cada entrada es [método, ruta], por ejemplo ["GET", "/api/v1/ejemplo"].
   UNDOCUMENTED_ROUTES = [].freeze
 
-  # Endpoints documentados que todavía no existen en Rails.
-  UNIMPLEMENTED_DOCUMENTED_ROUTES = [].freeze
-
   setup do
     @spec = YAML.safe_load_file(SPEC_PATH)
   end
@@ -54,7 +51,7 @@ class OpenapiSpecTest < ActionDispatch::IntegrationTest
   end
 
   test "every documented endpoint exists in the API routes" do
-    nonexistent = documented_pairs - rails_routes - UNIMPLEMENTED_DOCUMENTED_ROUTES
+    nonexistent = documented_pairs - rails_routes
 
     assert_empty nonexistent, failure_message(
       "Endpoints documentados en swagger/v1/openapi.yaml que no existen en las rutas", nonexistent

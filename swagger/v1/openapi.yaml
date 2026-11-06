@@ -34,8 +34,10 @@ security:
 tags:
   - name: Autenticación
     description: Inicio y cierre de sesión, registro y usuario actual.
-  - name: Dashboard y ahorro
-    description: Resúmenes del mes en curso y del ahorro mes a mes.
+  - name: Dashboard
+    description: Resumen del mes en curso.
+  - name: Ahorro
+    description: Ahorro mes a mes.
   - name: Estadísticas
     description: Consumo, ahorro y gasto hormiga por año o por mes.
   - name: Categorías
@@ -48,7 +50,7 @@ tags:
     description: Metas del grupo familiar. El aporte de ahorro no es consumo.
   - name: Compras en cuotas
     description: Compras del grupo familiar. Las cuotas no crean consumo.
-  - name: Lista de gastos fijos
+  - name: Gastos fijos
     description: Lo planificado de cada mes, por categoría.
   - name: Usuarios
     description: Listado de usuarios (solo administrador).
@@ -78,8 +80,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthSession"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           description: Usuario o contraseña incorrectos.
           content:
@@ -123,8 +123,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthSession"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
 
@@ -146,7 +144,7 @@ paths:
 
   /dashboard:
     get:
-      tags: [Dashboard y ahorro]
+      tags: [Dashboard]
       summary: Resumen del mes en curso
       description: Resumen del mes en curso del usuario (el administrador ve el de todos). Siempre se cumple `income = consumption + savings`.
       operationId: getDashboard
@@ -162,7 +160,7 @@ paths:
 
   /savings:
     get:
-      tags: [Dashboard y ahorro]
+      tags: [Ahorro]
       summary: Ahorro mes a mes
       description: El ahorro mes a mes desde el primer movimiento hasta el mes en curso (no incluye meses futuros). El administrador ve el de todos.
       operationId: getSavings
@@ -251,8 +249,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Category"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -284,8 +280,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Category"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -401,8 +395,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Expense"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -440,8 +432,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Expense"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -496,8 +486,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Income"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -524,8 +512,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Income"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -579,8 +565,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SavingsGoal"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -607,8 +591,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SavingsGoal"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -662,8 +644,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InstallmentPurchase"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -690,8 +670,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InstallmentPurchase"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -712,7 +690,7 @@ paths:
 
   /shopping_list_items:
     get:
-      tags: [Lista de gastos fijos]
+      tags: [Gastos fijos]
       summary: Listar ítems de la lista de gastos fijos
       description: Ítems del grupo familiar del usuario, ordenados por mes y nombre. El administrador ve los de todos.
       operationId: listShoppingListItems
@@ -735,7 +713,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
     post:
-      tags: [Lista de gastos fijos]
+      tags: [Gastos fijos]
       summary: Crear un ítem de la lista de gastos fijos
       description: El ítem queda en el grupo familiar del usuario; cualquier `family_group_id` enviado se ignora.
       operationId: createShoppingListItem
@@ -752,8 +730,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ShoppingListItem"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -763,7 +739,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     patch:
-      tags: [Lista de gastos fijos]
+      tags: [Gastos fijos]
       summary: Editar un ítem de la lista de gastos fijos
       description: Acepta los mismos campos que al crear, todos opcionales.
       operationId: updateShoppingListItem
@@ -780,8 +756,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ShoppingListItem"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -789,7 +763,7 @@ paths:
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
     delete:
-      tags: [Lista de gastos fijos]
+      tags: [Gastos fijos]
       summary: Borrar un ítem de la lista de gastos fijos
       operationId: deleteShoppingListItem
       responses:
@@ -840,16 +814,6 @@ components:
         example: 1
 
   responses:
-    BadRequest:
-      description: El cuerpo no es un JSON válido.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            errors:
-              - field: base
-                message: JSON mal formado
     Unauthorized:
       description: Falta el token, es inválido, venció o se cerró la sesión.
       content:
@@ -1689,7 +1653,7 @@ components:
         vendor_id:
           type: integer
 
-    # --- Lista de gastos fijos ---
+    # --- Gastos fijos ---
     ShoppingListItem:
       type: object
       required: [id, name, period, quantity, estimated_unit_price, subtotal, category]
