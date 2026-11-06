@@ -2,7 +2,7 @@
 
 **Versión:** 0.2 · **Autora:** Norali · **Base URL:** `/api/v1` · **Formato:** JSON
 
-Esta misma API está documentada de forma interactiva en Swagger UI, en `/api-docs` (por ejemplo, `http://localhost:3000/api-docs`). La especificación está en [`swagger/v1/openapi.yaml`](swagger/v1/openapi.yaml).
+Esta misma API está documentada de forma interactiva en Swagger UI, en `/api-docs` (por ejemplo, `http://localhost:3000/api-docs`). Este documento (`api.md`) sigue siendo el contrato en prosa; la especificación [`swagger/v1/openapi.yaml`](swagger/v1/openapi.yaml) es su versión formal. El test `test/docs/openapi_spec_test.rb` compara los endpoints del YAML con las rutas reales de la API y falla si se separan; cuando cambia un endpoint, se actualizan `api.md` y el YAML juntos.
 
 Este documento es el acuerdo entre el back-end (Rails) y el front-end (React). Lo que está acá es lo que el front puede usar. Si hay que cambiar algo, se cambia acá primero y se avisa por Trello.
 

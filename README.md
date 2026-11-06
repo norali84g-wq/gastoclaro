@@ -99,7 +99,7 @@ Lo básico para empezar:
 
 ### Documentación interactiva (Swagger UI)
 
-La API también está documentada en formato OpenAPI y se puede explorar y probar desde el navegador. Con el servidor levantado (`bin/rails server`), abrí [http://localhost:3000/api-docs](http://localhost:3000/api-docs) (si tu navegador no te redirige, usá `/api-docs/index.html`).
+La API también está documentada en formato OpenAPI y se puede explorar y probar desde el navegador. Con el servidor levantado (`bin/rails server`), abrí [http://localhost:3000/api-docs](http://localhost:3000/api-docs).
 
 Para probar un endpoint protegido:
 

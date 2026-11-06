@@ -629,7 +629,7 @@ paths:
     post:
       tags: [Compras en cuotas]
       summary: Crear una compra en cuotas
-      description: Si hay varios campos inválidos, la API los devuelve todos juntos en el `422`.
+      description: Las cuotas **no se suman al consumo mensual** ni cambian el `consumption` del dashboard ni de las estadísticas. Si hay varios campos inválidos, la API los devuelve todos juntos en el `422`.
       operationId: createInstallmentPurchase
       requestBody:
         required: true
@@ -655,7 +655,7 @@ paths:
     patch:
       tags: [Compras en cuotas]
       summary: Editar una compra en cuotas
-      description: Acepta los mismos campos que al crear, todos opcionales.
+      description: Acepta los mismos campos que al crear, todos opcionales. Las cuotas **no se suman al consumo mensual** ni cambian el `consumption` del dashboard ni de las estadísticas.
       operationId: updateInstallmentPurchase
       requestBody:
         required: true
@@ -1736,7 +1736,7 @@ components:
           type: integer
           readOnly: true
           minimum: 0
-          description: Calculado. Cuotas que faltan hasta el mes actual (nunca menos de `0`).
+          description: Calculado. Cuotas que todavía no vencieron. No cuenta la del mes en curso, que ya se considera paga (una compra de 1 cuota que empieza este mes tiene `0`; una de 12 tiene `11`). Nunca menos de `0`.
     InstallmentPurchaseInput:
       type: object
       required: [description, total_amount, installments_count, first_period, category_id]
